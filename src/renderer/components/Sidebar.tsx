@@ -5,6 +5,8 @@ interface SidebarProps {
   connections: DatabaseConnection[];
   activeConnectionId: string | null;
   schemas: SchemaInfo[];
+  connectionErrors?: Record<string, string>;
+  connectingConnectionIds?: Set<string>;
   onConnectionSelect: (id: string) => void;
   onConnectionRemove: (id: string) => void;
   onNewConnection: () => void;
@@ -15,6 +17,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   connections,
   activeConnectionId,
   schemas,
+  connectionErrors = {},
+  connectingConnectionIds = new Set(),
   onConnectionSelect,
   onConnectionRemove,
   onNewConnection,
@@ -68,10 +72,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <div className="connection-info">
                 <div className="connection-name">
                   {connection.name}
+                  {connectingConnectionIds.has(connection.id) && (
+                    <span style={{ 
+                      marginLeft: '8px', 
+                      fontSize: '10px', 
+                      color: '#3b82f6' 
+                    }}>
+                      Connecting...
+                    </span>
+                  )}
                 </div>
                 <div className="connection-details">
                   {connection.host}:{connection.port}/{connection.database}
                 </div>
+                {connectionErrors[connection.id] && (
+                  <div style={{ 
+                    fontSize: '10px', 
+                    color: '#dc2626', 
+                    marginTop: '2px',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {connectionErrors[connection.id]}
+                  </div>
+                )}
               </div>
               <button
                 className="connection-remove"

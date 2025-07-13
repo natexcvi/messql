@@ -1,12 +1,13 @@
-import React, { useEffect, useRef } from 'react';
-import { EditorView, basicSetup } from 'codemirror';
-import { sql } from '@codemirror/lang-sql';
-import { autocompletion, completionKeymap } from '@codemirror/autocomplete';
-import { keymap } from '@codemirror/view';
-import { DatabaseConnection, QueryTab, SchemaInfo } from '../types';
-import { QueryResults } from './QueryResults';
-import { ResizableTable } from './ResizableTable';
-import { createSQLCompletions } from '../services/autocomplete';
+import React, { useEffect, useRef, useCallback } from "react";
+import { EditorView, basicSetup } from "codemirror";
+import { sql } from "@codemirror/lang-sql";
+import { autocompletion, completionKeymap } from "@codemirror/autocomplete";
+import { keymap } from "@codemirror/view";
+import { DatabaseConnection, QueryTab, SchemaInfo } from "../types";
+import { QueryResults } from "./QueryResults";
+import { DataTable } from "./DataTable";
+import { createSQLCompletions } from "../services/autocomplete";
+import { Prec } from "@codemirror/state";
 
 interface QueryEditorProps {
   tab: QueryTab;
@@ -25,9 +26,11 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
+  const isInitializedRef = useRef(false);
 
+  // Initialize editor only once when component mounts
   useEffect(() => {
-    if (!editorRef.current) return;
+    if (!editorRef.current || isInitializedRef.current) return;
 
     const completions = createSQLCompletions(schemas);
 
@@ -39,25 +42,19 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
         autocompletion({
           override: [completions],
         }),
-        keymap.of([
-          ...completionKeymap,
-          {
-            key: 'Cmd-Enter',
-            run: () => {
-              const query = view.state.doc.toString();
-              onQueryExecute(tab.id, query);
-              return true;
+        Prec.high(
+          keymap.of([
+            ...completionKeymap,
+            {
+              key: "Mod-Enter",
+              run: () => {
+                const query = view.state.doc.toString();
+                onQueryExecute(tab.id, query);
+                return true;
+              },
             },
-          },
-          {
-            key: 'Ctrl-Enter',
-            run: () => {
-              const query = view.state.doc.toString();
-              onQueryExecute(tab.id, query);
-              return true;
-            },
-          },
-        ]),
+          ]),
+        ),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             const newQuery = update.state.doc.toString();
@@ -69,12 +66,30 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
     });
 
     viewRef.current = view;
+    isInitializedRef.current = true;
 
     return () => {
-      view.destroy();
+      if (viewRef.current) {
+        viewRef.current.destroy();
+        viewRef.current = null;
+        isInitializedRef.current = false;
+      }
     };
-  }, [tab.id, tab.query, schemas, onQueryChange, onQueryExecute]);
+  }, []); // Only initialize once
 
+  // Update query content when tab.query changes (e.g., when switching tabs)
+  useEffect(() => {
+    if (viewRef.current && viewRef.current.state.doc.toString() !== tab.query) {
+      const transaction = viewRef.current.state.update({
+        changes: {
+          from: 0,
+          to: viewRef.current.state.doc.length,
+          insert: tab.query,
+        },
+      });
+      viewRef.current.dispatch(transaction);
+    }
+  }, [tab.query, tab.id]);
 
   const handleExecute = () => {
     if (viewRef.current) {
@@ -91,25 +106,23 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
           disabled={tab.isExecuting}
           className="primary"
         >
-          {tab.isExecuting ? 'Executing...' : 'Execute (⌘+Enter)'}
+          {tab.isExecuting ? "Executing..." : "Execute (⌘+Enter)"}
         </button>
-        
-        <span className="toolbar-info">
-          Connected to: {connection.name}
-        </span>
+
+        <span className="toolbar-info">Connected to: {connection.name}</span>
       </div>
 
       <div className="editor-container">
         <div
           ref={editorRef}
           style={{
-            height: '100%',
+            height: "100%",
           }}
         />
       </div>
 
       {tab.result ? (
-        <ResizableTable result={tab.result} />
+        <DataTable result={tab.result} />
       ) : (
         <QueryResults
           result={tab.result}

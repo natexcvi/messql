@@ -3,11 +3,12 @@ import { DatabaseConnection, QueryResult, SchemaInfo, TableInfo } from '../types
 
 export const useDatabase = () => {
   const connect = useCallback(async (connection: DatabaseConnection): Promise<void> => {
-    // First, try to get password from keychain
+    // For restored connections, we might not have a password in keychain yet
+    // In that case, we'll need to prompt the user for the password
     const password = await window.electronAPI.keychain.get('postgres', connection.id);
     
     if (!password) {
-      throw new Error('Password not found in keychain');
+      throw new Error(`Password not found in keychain for connection "${connection.name}". Please reconnect to save the password.`);
     }
 
     // Connect to database

@@ -31,10 +31,9 @@ body {
   left: 0;
   right: 0;
   height: 40px;
-  background-color: #ffffff;
+  background-color: #f8f9fa;
   -webkit-app-region: drag;
   z-index: 100;
-  border-bottom: 1px solid #e5e5e5;
 }
 
 .sidebar {
@@ -339,7 +338,7 @@ body {
   user-select: none;
   min-width: 100px;
   white-space: nowrap;
-  overflow: hidden;
+  overflow: visible;
   text-overflow: ellipsis;
   position: relative;
 }
@@ -742,13 +741,13 @@ body {
 
 .column-resizer {
   position: absolute;
-  right: 0;
+  right: -2px;
   top: 0;
   bottom: 0;
   width: 4px;
   cursor: col-resize;
   background: transparent;
-  z-index: 20;
+  z-index: 21;
 }
 
 .column-resizer:hover {
@@ -757,6 +756,10 @@ body {
 
 .column-resizer.resizing {
   background-color: #3b82f6;
+}
+
+.results-table th:last-child .column-resizer {
+  display: none;
 }
 
 .results-table th.resizing {

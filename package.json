@@ -6,7 +6,7 @@
   "build": {
     "appId": "com.example.messql",
     "mac": {
-      "icon": "logo.icns",
+      "icon": "icon.iconset/Icon-macOS-Dark-1024x1024@2x.png",
       "target": [
         "dmg",
         "zip"

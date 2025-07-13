@@ -1,0 +1,39 @@
+{
+  "fill" : {
+    "linear-gradient" : [
+      "display-p3:0.28714,0.63698,0.75213,1.00000",
+      "display-p3:0.26245,0.58691,0.69336,1.00000"
+    ]
+  },
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "image-name" : "mesSQL Logo-2.svg",
+          "name" : "mesSQL Logo-2",
+          "position" : {
+            "scale" : 2,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }
+}

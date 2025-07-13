@@ -3,6 +3,7 @@ import { Sidebar } from './components/Sidebar';
 import { MainContent } from './components/MainContent';
 import { ConnectionForm } from './components/ConnectionForm';
 import { useDatabase } from './hooks/useDatabase';
+import { storageService } from './services/storage';
 import { DatabaseConnection, QueryTab, AppState } from './types';
 
 export const App: React.FC = () => {
@@ -16,6 +17,18 @@ export const App: React.FC = () => {
     showConnectionForm: false,
   });
 
+  const [connectionErrors, setConnectionErrors] = useState<Record<string, string>>({});
+  const [connectingConnectionIds, setConnectingConnectionIds] = useState<Set<string>>(new Set());
+
+  // Load connections on startup
+  useEffect(() => {
+    const savedConnections = storageService.loadConnections();
+    setState(prev => ({
+      ...prev,
+      connections: savedConnections,
+    }));
+  }, []);
+
   const { connect, disconnect, query, getSchemas } = useDatabase();
 
   const addConnection = useCallback(async (connection: DatabaseConnection) => {
@@ -25,29 +38,40 @@ export const App: React.FC = () => {
       await connect(connection);
       const schemas = await getSchemas(connection.id);
       
+      const updatedConnections = [...state.connections, connection];
+      
       setState(prev => ({
         ...prev,
-        connections: [...prev.connections, connection],
+        connections: updatedConnections,
         activeConnectionId: connection.id,
         schemas,
         isConnecting: false,
         showConnectionForm: false,
       }));
+
+      // Save to localStorage
+      storageService.saveConnections(updatedConnections);
     } catch (error) {
       console.error('Failed to connect:', error);
       setState(prev => ({ ...prev, isConnecting: false }));
     }
-  }, [connect, getSchemas]);
+  }, [connect, getSchemas, state.connections]);
 
   const removeConnection = useCallback(async (connectionId: string) => {
     await disconnect(connectionId);
+    const updatedConnections = state.connections.filter(c => c.id !== connectionId);
+    
     setState(prev => ({
       ...prev,
-      connections: prev.connections.filter(c => c.id !== connectionId),
+      connections: updatedConnections,
       activeConnectionId: prev.activeConnectionId === connectionId ? null : prev.activeConnectionId,
       schemas: prev.activeConnectionId === connectionId ? [] : prev.schemas,
     }));
-  }, [disconnect]);
+
+    // Save to localStorage and remove from keychain
+    storageService.saveConnections(updatedConnections);
+    storageService.removeConnection(connectionId);
+  }, [disconnect, state.connections]);
 
   const addQueryTab = useCallback(() => {
     const newTab: QueryTab = {
@@ -149,7 +173,34 @@ export const App: React.FC = () => {
         connections={state.connections}
         activeConnectionId={state.activeConnectionId}
         schemas={state.schemas}
-        onConnectionSelect={(id) => setState(prev => ({ ...prev, activeConnectionId: id }))}
+        connectionErrors={connectionErrors}
+        connectingConnectionIds={connectingConnectionIds}
+        onConnectionSelect={async (id) => {
+          try {
+            setConnectionErrors(prev => ({ ...prev, [id]: '' }));
+            setConnectingConnectionIds(prev => new Set([...prev, id]));
+            
+            const connection = state.connections.find(c => c.id === id);
+            if (connection) {
+              await connect(connection);
+              const schemas = await getSchemas(connection.id);
+              setState(prev => ({ 
+                ...prev, 
+                activeConnectionId: id,
+                schemas,
+              }));
+            }
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            setConnectionErrors(prev => ({ ...prev, [id]: errorMessage }));
+          } finally {
+            setConnectingConnectionIds(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(id);
+              return newSet;
+            });
+          }
+        }}
         onConnectionRemove={removeConnection}
         onNewConnection={() => setState(prev => ({ ...prev, showConnectionForm: true }))}
         onTableSelect={(schema, table) => {
