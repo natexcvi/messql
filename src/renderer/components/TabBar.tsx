@@ -1,5 +1,5 @@
-import React from 'react';
-import { QueryTab } from '../types';
+import React from "react";
+import { QueryTab } from "../types";
 
 interface TabBarProps {
   tabs: QueryTab[];
@@ -18,10 +18,10 @@ export const TabBar: React.FC<TabBarProps> = ({
 }) => {
   return (
     <div className="tab-bar">
-      {tabs.map(tab => (
+      {tabs.map((tab) => (
         <div
           key={tab.id}
-          className={`tab ${tab.id === activeTabId ? 'active' : ''}`}
+          className={`tab ${tab.id === activeTabId ? "active" : ""}`}
           onClick={() => onTabSelect(tab.id)}
         >
           <span className="tab-title">{tab.title}</span>
@@ -36,12 +36,14 @@ export const TabBar: React.FC<TabBarProps> = ({
           </button>
         </div>
       ))}
-      
+
       <button
         className="new-tab-button"
         onClick={onNewTab}
+        title="New Query (⌘+T)"
       >
-        +
+        <span>+</span>
+        <span>New Query</span>
       </button>
     </div>
   );

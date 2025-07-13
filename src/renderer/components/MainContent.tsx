@@ -1,7 +1,7 @@
-import React from 'react';
-import { TabBar } from './TabBar';
-import { QueryEditor } from './QueryEditor';
-import { DatabaseConnection, QueryTab, SchemaInfo } from '../types';
+import React from "react";
+import { TabBar } from "./TabBar";
+import { QueryEditor } from "./QueryEditor";
+import { DatabaseConnection, QueryTab, SchemaInfo } from "../types";
 
 interface MainContentProps {
   queryTabs: QueryTab[];
@@ -26,7 +26,7 @@ export const MainContent: React.FC<MainContentProps> = ({
   onQueryExecute,
   schemas,
 }) => {
-  const activeTab = queryTabs.find(tab => tab.id === activeTabId);
+  const activeTab = queryTabs.find((tab) => tab.id === activeTabId);
 
   if (!activeConnection) {
     return (
@@ -48,7 +48,7 @@ export const MainContent: React.FC<MainContentProps> = ({
         onTabClose={onTabClose}
         onNewTab={onNewTab}
       />
-      
+
       {activeTab ? (
         <QueryEditor
           tab={activeTab}
@@ -61,9 +61,6 @@ export const MainContent: React.FC<MainContentProps> = ({
         <div className="empty-state">
           <h3>No Query Tab Open</h3>
           <p>Create a new query tab to get started</p>
-          <button onClick={onNewTab} className="btn-primary">
-            New Query
-          </button>
         </div>
       )}
     </div>

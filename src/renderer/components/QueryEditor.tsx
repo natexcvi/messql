@@ -27,10 +27,24 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const isInitializedRef = useRef(false);
+  const currentTabIdRef = useRef<string | null>(null);
 
-  // Initialize editor only once when component mounts
+  // Initialize editor when component mounts or tab changes
   useEffect(() => {
-    if (!editorRef.current || isInitializedRef.current) return;
+    if (!editorRef.current) return;
+    
+    // If we're switching to a different tab, reinitialize the editor
+    if (currentTabIdRef.current !== tab.id) {
+      // Destroy existing editor if it exists
+      if (viewRef.current) {
+        viewRef.current.destroy();
+        viewRef.current = null;
+        isInitializedRef.current = false;
+      }
+      currentTabIdRef.current = tab.id;
+    }
+    
+    if (isInitializedRef.current) return;
 
     const completions = createSQLCompletions(schemas);
 
@@ -75,7 +89,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
         isInitializedRef.current = false;
       }
     };
-  }, []); // Only initialize once
+  }, [tab.id, schemas]); // Reinitialize when tab changes
 
   // Update query content when tab.query changes (e.g., when switching tabs)
   useEffect(() => {
