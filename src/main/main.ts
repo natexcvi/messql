@@ -20,29 +20,30 @@ const createWindow = (): void => {
     },
     titleBarStyle: "hiddenInset",
     trafficLightPosition: { x: 20, y: 20 },
-    backgroundColor: '#f5f5f5',
-    vibrancy: 'sidebar',
+    backgroundColor: "#f5f5f5",
+    vibrancy: "sidebar",
   });
 
   // Handle window close event to check for open tabs
-  mainWindow.on('close', async (event) => {
+  mainWindow.on("close", async (event) => {
     event.preventDefault();
-    
+
     try {
       const hasOpenTabs = await mainWindow.webContents.executeJavaScript(`
         window.electronAPI && window.electronAPI.hasOpenTabs ? window.electronAPI.hasOpenTabs() : false
       `);
-      
+
       if (hasOpenTabs) {
-        const { dialog } = await import('electron');
+        const { dialog } = await import("electron");
         const choice = await dialog.showMessageBox(mainWindow, {
-          type: 'question',
-          buttons: ['Close', 'Cancel'],
+          type: "question",
+          buttons: ["Close", "Cancel"],
           defaultId: 1,
-          message: 'You have open query tabs. Are you sure you want to close the application?',
-          detail: 'Any unsaved work will be lost.'
+          message:
+            "You have open query tabs. Are you sure you want to close the application?",
+          detail: "Any unsaved work will be lost.",
         });
-        
+
         if (choice.response === 0) {
           mainWindow.destroy();
         }
@@ -173,7 +174,7 @@ app.whenReady().then(() => {
 });
 
 app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") app.quit();
+  app.quit();
 });
 
 const setupIpcHandlers = (): void => {
