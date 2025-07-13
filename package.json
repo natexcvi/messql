@@ -13,16 +13,17 @@
       ]
     },
     "files": [
-      "dist/**/*",
-      "logo.icns",
-      "src/main/**/*"
-    ],
-    "extraResources": [
+      "dist/main.js",
+      "dist/bundle.js",
+      "dist/preload.js",
+      "dist/index.html",
+      "dist/services/**/*",
       "logo.icns"
     ],
-    "directories": {
-      "buildResources": "."
-    }
+    "extraResources": [
+      "logo.icns",
+      "icon.iconset"
+    ]
   },
   "scripts": {
     "build": "npm run build:main && npm run build:renderer",
