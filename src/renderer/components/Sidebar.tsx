@@ -46,10 +46,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
     )
   );
 
-  const filteredTables = (schema: SchemaInfo) => 
-    schema.tables.filter(table =>
+  const filteredTables = (schema: SchemaInfo) => {
+    // If schema name matches search, show all tables
+    if (schema.name.toLowerCase().includes(searchTerm.toLowerCase())) {
+      return schema.tables;
+    }
+    // Otherwise, filter tables by search term
+    return schema.tables.filter(table =>
       table.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
+  };
 
   return (
     <div className="sidebar">

@@ -31,15 +31,21 @@ export const DataTable: React.FC<DataTableProps> = ({ result }) => {
     e.preventDefault();
     e.stopPropagation();
 
+    const currentWidth = columns[columnName]?.width || 150;
+
     resizeState.current = {
       columnName,
       startX: e.clientX,
-      startWidth: columns[columnName].width,
+      startWidth: currentWidth,
     };
 
     setColumns(prev => ({
       ...prev,
-      [columnName]: { ...prev[columnName], isResizing: true },
+      [columnName]: { 
+        ...prev[columnName], 
+        width: currentWidth, 
+        isResizing: true 
+      },
     }));
 
     const handleMouseMove = (e: MouseEvent) => {
@@ -112,84 +118,90 @@ export const DataTable: React.FC<DataTableProps> = ({ result }) => {
           <table style={{ borderCollapse: 'collapse', width: 'max-content' }}>
             <thead>
               <tr>
-                {fields.map((field, index) => (
-                  <th
-                    key={field.name}
-                    style={{
-                      width: columns[field.name].width,
-                      minWidth: columns[field.name].width,
-                      maxWidth: columns[field.name].width,
-                      position: 'sticky',
-                      top: 0,
-                      backgroundColor: columns[field.name].isResizing ? '#eff6ff' : '#f8f9fa',
-                      border: '1px solid #e5e5e5',
-                      padding: '8px 12px',
-                      fontSize: '11px',
-                      fontWeight: 500,
-                      color: '#374151',
-                      textAlign: 'left',
-                      userSelect: 'none',
-                      zIndex: 10,
-                    }}
-                  >
-                    {field.name}
-                    {index < fields.length - 1 && (
-                      <div
-                        style={{
-                          position: 'absolute',
-                          right: -2,
-                          top: 0,
-                          bottom: 0,
-                          width: 4,
-                          cursor: 'col-resize',
-                          backgroundColor: columns[field.name].isResizing ? '#3b82f6' : 'transparent',
-                          zIndex: 11,
-                        }}
-                        onMouseDown={(e) => handleMouseDown(e, field.name)}
-                        onMouseEnter={(e) => {
-                          if (!resizeState.current) {
-                            (e.target as HTMLElement).style.backgroundColor = '#3b82f6';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!resizeState.current) {
-                            (e.target as HTMLElement).style.backgroundColor = 'transparent';
-                          }
-                        }}
-                      />
-                    )}
-                  </th>
-                ))}
+                {fields.map((field, index) => {
+                  const columnState = columns[field.name] || { width: 150, isResizing: false };
+                  return (
+                    <th
+                      key={field.name}
+                      style={{
+                        width: columnState.width,
+                        minWidth: columnState.width,
+                        maxWidth: columnState.width,
+                        position: 'sticky',
+                        top: 0,
+                        backgroundColor: columnState.isResizing ? '#eff6ff' : '#f8f9fa',
+                        border: '1px solid #e5e5e5',
+                        padding: '8px 12px',
+                        fontSize: '11px',
+                        fontWeight: 500,
+                        color: '#374151',
+                        textAlign: 'left',
+                        userSelect: 'none',
+                        zIndex: 10,
+                      }}
+                    >
+                      {field.name}
+                      {index < fields.length - 1 && (
+                        <div
+                          style={{
+                            position: 'absolute',
+                            right: -2,
+                            top: 0,
+                            bottom: 0,
+                            width: 4,
+                            cursor: 'col-resize',
+                            backgroundColor: columnState.isResizing ? '#3b82f6' : 'transparent',
+                            zIndex: 11,
+                          }}
+                          onMouseDown={(e) => handleMouseDown(e, field.name)}
+                          onMouseEnter={(e) => {
+                            if (!resizeState.current) {
+                              (e.target as HTMLElement).style.backgroundColor = '#3b82f6';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!resizeState.current) {
+                              (e.target as HTMLElement).style.backgroundColor = 'transparent';
+                            }
+                          }}
+                        />
+                      )}
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
               {rows.map((row, rowIndex) => (
                 <tr key={rowIndex}>
-                  {fields.map((field) => (
-                    <td
-                      key={field.name}
-                      style={{
-                        width: columns[field.name].width,
-                        minWidth: columns[field.name].width,
-                        maxWidth: columns[field.name].width,
-                        border: '1px solid #f3f4f6',
-                        padding: '6px 12px',
-                        fontSize: '12px',
-                        color: '#111827',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {row[field.name] === null ? (
-                        <span style={{ color: '#9ca3af', fontStyle: 'italic', fontSize: '11px' }}>
-                          NULL
-                        </span>
-                      ) : (
-                        String(row[field.name])
-                      )}
-                    </td>
-                  ))}
+                  {fields.map((field) => {
+                    const columnState = columns[field.name] || { width: 150, isResizing: false };
+                    return (
+                      <td
+                        key={field.name}
+                        style={{
+                          width: columnState.width,
+                          minWidth: columnState.width,
+                          maxWidth: columnState.width,
+                          border: '1px solid #f3f4f6',
+                          padding: '6px 12px',
+                          fontSize: '12px',
+                          color: '#111827',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {row[field.name] === null ? (
+                          <span style={{ color: '#9ca3af', fontStyle: 'italic', fontSize: '11px' }}>
+                            NULL
+                          </span>
+                        ) : (
+                          String(row[field.name])
+                        )}
+                      </td>
+                    );
+                  })}
                 </tr>
               ))}
             </tbody>
