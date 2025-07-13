@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import { TabBar } from "./TabBar";
-import { QueryEditor } from "./QueryEditor";
+import { QueryEditor, QueryEditorRef } from "./QueryEditor";
 import { DatabaseConnection, QueryTab, SchemaInfo } from "../types";
 
 interface MainContentProps {
@@ -27,6 +27,17 @@ export const MainContent: React.FC<MainContentProps> = ({
   schemas,
 }) => {
   const activeTab = queryTabs.find((tab) => tab.id === activeTabId);
+  const queryEditorRef = useRef<QueryEditorRef>(null);
+
+  // Focus the editor when activeTabId changes
+  useEffect(() => {
+    if (activeTabId && queryEditorRef.current) {
+      // Small delay to ensure the editor is fully rendered
+      setTimeout(() => {
+        queryEditorRef.current?.focus();
+      }, 100);
+    }
+  }, [activeTabId]);
 
   if (!activeConnection) {
     return (
@@ -51,6 +62,7 @@ export const MainContent: React.FC<MainContentProps> = ({
 
       {activeTab ? (
         <QueryEditor
+          ref={queryEditorRef}
           tab={activeTab}
           connection={activeConnection}
           onQueryChange={onQueryChange}

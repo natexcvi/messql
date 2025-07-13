@@ -161,6 +161,8 @@ body {
   color: #ffffff;
   border-radius: 6px;
   margin-left: 8px;
+  margin-bottom: 4px;
+  align-self: flex-end;
   transition: all 0.15s ease;
   font-weight: 500;
   display: flex;

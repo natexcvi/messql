@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from "react";
+import React, { useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from "react";
 import { EditorView, basicSetup } from "codemirror";
 import { sql } from "@codemirror/lang-sql";
 import { autocompletion, completionKeymap } from "@codemirror/autocomplete";
@@ -17,17 +17,30 @@ interface QueryEditorProps {
   schemas: SchemaInfo[];
 }
 
-export const QueryEditor: React.FC<QueryEditorProps> = ({
+export interface QueryEditorRef {
+  focus: () => void;
+}
+
+export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(({
   tab,
   connection,
   onQueryChange,
   onQueryExecute,
   schemas,
-}) => {
+}, ref) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const isInitializedRef = useRef(false);
   const currentTabIdRef = useRef<string | null>(null);
+
+  // Expose focus method to parent components
+  useImperativeHandle(ref, () => ({
+    focus: () => {
+      if (viewRef.current) {
+        viewRef.current.focus();
+      }
+    },
+  }));
 
   // Initialize editor when component mounts or tab changes
   useEffect(() => {
@@ -146,4 +159,4 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
       )}
     </div>
   );
-};
+});
