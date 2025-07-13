@@ -1,4 +1,4 @@
-<img width="128" height="128" alt="Icon-macOS-Dark-1024x1024@2x" src="https://github.com/user-attachments/assets/a014b22b-d74d-4823-a2d9-e31b48d37bfd" />
+<img width="128" height="128" alt="Icon-macOS-Dark-128x128@2x" src="https://github.com/user-attachments/assets/8ad56c15-b98f-4d87-b68a-cd02286320e0" />
 
 # mesSQL
 
