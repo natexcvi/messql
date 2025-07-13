@@ -370,70 +370,340 @@ body {
   border-left-color: var(--text-primary) !important;
 }
 
-/* SQL Syntax highlighting for dark mode */
+/* Ayu Mirage theme for dark mode */
+[data-theme="dark"] .cm-editor .cm-content {
+  color: #cbccc6 !important; /* Default text color */
+}
+
+/* Keywords (SELECT, FROM, WHERE, INSERT, etc.) */
+[data-theme="dark"] .cm-editor .hl-keyword {
+  color: #ffa759 !important; /* Orange */
+}
+
+/* String literals */
+[data-theme="dark"] .cm-editor .hl-string {
+  color: #bae67e !important; /* Green */
+}
+
+/* Comments */
+[data-theme="dark"] .cm-editor .hl-comment {
+  color: #5c6773 !important; /* Gray */
+  font-style: italic;
+}
+
+/* Numbers */
+[data-theme="dark"] .cm-editor .hl-number {
+  color: #d4bfff !important; /* Purple */
+}
+
+/* Operators (+, -, =, etc.) */
+[data-theme="dark"] .cm-editor .hl-operator {
+  color: #f29e74 !important; /* Orange-red */
+}
+
+/* Punctuation (, ; . etc.) */
+[data-theme="dark"] .cm-editor .hl-punctuation {
+  color: #cbccc6 !important; /* Default text */
+}
+
+/* Functions */
+[data-theme="dark"] .cm-editor .hl-function {
+  color: #73d0ff !important; /* Blue */
+}
+
+/* Types and built-ins */
+[data-theme="dark"] .cm-editor .hl-builtin {
+  color: #ffdfb3 !important; /* Light orange */
+}
+
+/* Variables and identifiers */
+[data-theme="dark"] .cm-editor .hl-name {
+  color: #cbccc6 !important; /* Default text */
+}
+
+/* Standard CodeMirror token classes */
 [data-theme="dark"] .cm-editor .tok-keyword {
-  color: #ff79c6 !important; /* Pink for keywords */
+  color: #ffa759 !important; /* Orange */
 }
 
 [data-theme="dark"] .cm-editor .tok-string {
-  color: #f1fa8c !important; /* Yellow for strings */
+  color: #bae67e !important; /* Green */
 }
 
 [data-theme="dark"] .cm-editor .tok-comment {
-  color: #6272a4 !important; /* Blue-gray for comments */
+  color: #5c6773 !important; /* Gray */
+  font-style: italic;
 }
 
 [data-theme="dark"] .cm-editor .tok-number {
-  color: #bd93f9 !important; /* Purple for numbers */
+  color: #d4bfff !important; /* Purple */
 }
 
 [data-theme="dark"] .cm-editor .tok-operator {
-  color: #ff79c6 !important; /* Pink for operators */
+  color: #f29e74 !important; /* Orange-red */
 }
 
 [data-theme="dark"] .cm-editor .tok-punctuation {
-  color: var(--text-secondary) !important;
+  color: #cbccc6 !important; /* Default text */
+}
+
+[data-theme="dark"] .cm-editor .tok-function {
+  color: #73d0ff !important; /* Blue */
 }
 
 [data-theme="dark"] .cm-editor .tok-variableName {
-  color: #50fa7b !important; /* Green for variables */
+  color: #cbccc6 !important; /* Default text */
 }
 
 [data-theme="dark"] .cm-editor .tok-typeName {
-  color: #8be9fd !important; /* Cyan for types */
+  color: #ffdfb3 !important; /* Light orange */
 }
 
-/* Light mode syntax highlighting */
+[data-theme="dark"] .cm-editor .tok-builtin {
+  color: #ffdfb3 !important; /* Light orange */
+}
+
+/* Additional CodeMirror SQL highlighting classes */
+[data-theme="dark"] .cm-editor .cm-sql-keyword {
+  color: #ffa759 !important; /* Orange */
+}
+
+[data-theme="dark"] .cm-editor .cm-sql-string {
+  color: #bae67e !important; /* Green */
+}
+
+[data-theme="dark"] .cm-editor .cm-sql-comment {
+  color: #5c6773 !important; /* Gray */
+  font-style: italic;
+}
+
+[data-theme="dark"] .cm-editor .cm-sql-number {
+  color: #d4bfff !important; /* Purple */
+}
+
+[data-theme="dark"] .cm-editor .cm-sql-operator {
+  color: #f29e74 !important; /* Orange-red */
+}
+
+[data-theme="dark"] .cm-editor .cm-sql-builtin {
+  color: #73d0ff !important; /* Blue */
+}
+
+/* More generic token classes */
+[data-theme="dark"] .cm-editor .tok-atom {
+  color: #d4bfff !important; /* Purple for atoms/booleans */
+}
+
+[data-theme="dark"] .cm-editor .tok-meta {
+  color: #5c6773 !important; /* Gray for meta */
+}
+
+[data-theme="dark"] .cm-editor .tok-qualifier {
+  color: #ffdfb3 !important; /* Light orange for qualifiers */
+}
+
+[data-theme="dark"] .cm-editor .tok-bracket {
+  color: #cbccc6 !important; /* Default for brackets */
+}
+
+[data-theme="dark"] .cm-editor .tok-tag {
+  color: #ffa759 !important; /* Orange for tags */
+}
+
+[data-theme="dark"] .cm-editor .tok-attribute {
+  color: #73d0ff !important; /* Blue for attributes */
+}
+
+/* CodeMirror 6 specific SQL classes based on @codemirror/lang-sql */
+[data-theme="dark"] .cm-editor .hl-sql {
+  color: #cbccc6 !important;
+}
+
+[data-theme="dark"] .cm-editor .hl-sql.keyword {
+  color: #ffa759 !important; /* Orange */
+}
+
+[data-theme="dark"] .cm-editor .hl-sql.string {
+  color: #bae67e !important; /* Green */
+}
+
+[data-theme="dark"] .cm-editor .hl-sql.comment {
+  color: #5c6773 !important; /* Gray */
+  font-style: italic;
+}
+
+[data-theme="dark"] .cm-editor .hl-sql.number {
+  color: #d4bfff !important; /* Purple */
+}
+
+[data-theme="dark"] .cm-editor .hl-sql.builtin {
+  color: #73d0ff !important; /* Blue */
+}
+
+[data-theme="dark"] .cm-editor .hl-sql.operator {
+  color: #f29e74 !important; /* Orange-red */
+}
+
+/* More specific Lezer parser classes */
+[data-theme="dark"] .cm-editor .cmt-keyword {
+  color: #ffa759 !important; /* Orange */
+}
+
+[data-theme="dark"] .cm-editor .cmt-string {
+  color: #bae67e !important; /* Green */
+}
+
+[data-theme="dark"] .cm-editor .cmt-comment {
+  color: #5c6773 !important; /* Gray */
+  font-style: italic;
+}
+
+[data-theme="dark"] .cm-editor .cmt-number {
+  color: #d4bfff !important; /* Purple */
+}
+
+[data-theme="dark"] .cm-editor .cmt-operator {
+  color: #f29e74 !important; /* Orange-red */
+}
+
+[data-theme="dark"] .cm-editor .cmt-builtin {
+  color: #73d0ff !important; /* Blue */
+}
+
+[data-theme="dark"] .cm-editor .cmt-typeName {
+  color: #ffdfb3 !important; /* Light orange */
+}
+
+[data-theme="dark"] .cm-editor .cmt-variableName {
+  color: #cbccc6 !important; /* Default text */
+}
+
+/* Catch-all for any other SQL tokens in dark mode */
+[data-theme="dark"] .cm-editor .hl-literal {
+  color: #d4bfff !important; /* Purple for literals */
+}
+
+[data-theme="dark"] .cm-editor .hl-identifier {
+  color: #cbccc6 !important; /* Default for identifiers */
+}
+
+[data-theme="dark"] .cm-editor .hl-type {
+  color: #ffdfb3 !important; /* Light orange for types */
+}
+
+[data-theme="dark"] .cm-editor .hl-property {
+  color: #73d0ff !important; /* Blue for properties */
+}
+
+[data-theme="dark"] .cm-editor .hl-definition {
+  color: #cbccc6 !important; /* Default for definitions */
+}
+
+/* Light mode syntax highlighting - GitHub style */
+.cm-editor .hl-keyword,
 .cm-editor .tok-keyword {
   color: #d73a49 !important; /* Red for keywords */
 }
 
+.cm-editor .hl-string,
 .cm-editor .tok-string {
   color: #032f62 !important; /* Dark blue for strings */
 }
 
+.cm-editor .hl-comment,
 .cm-editor .tok-comment {
   color: #6a737d !important; /* Gray for comments */
+  font-style: italic;
 }
 
+.cm-editor .hl-number,
 .cm-editor .tok-number {
   color: #005cc5 !important; /* Blue for numbers */
 }
 
+.cm-editor .hl-operator,
 .cm-editor .tok-operator {
   color: #d73a49 !important; /* Red for operators */
 }
 
+.cm-editor .hl-punctuation,
 .cm-editor .tok-punctuation {
   color: var(--text-secondary) !important;
 }
 
+.cm-editor .hl-function,
+.cm-editor .tok-function {
+  color: #6f42c1 !important; /* Purple for functions */
+}
+
+.cm-editor .hl-name,
 .cm-editor .tok-variableName {
   color: #e36209 !important; /* Orange for variables */
 }
 
-.cm-editor .tok-typeName {
+.cm-editor .hl-builtin,
+.cm-editor .tok-typeName,
+.cm-editor .tok-builtin {
   color: #6f42c1 !important; /* Purple for types */
+}
+
+/* Light mode for additional classes */
+.cm-editor .tok-atom {
+  color: #005cc5 !important; /* Blue for atoms */
+}
+
+.cm-editor .tok-meta {
+  color: #6a737d !important; /* Gray for meta */
+}
+
+.cm-editor .tok-qualifier {
+  color: #6f42c1 !important; /* Purple for qualifiers */
+}
+
+.cm-editor .tok-bracket {
+  color: var(--text-secondary) !important;
+}
+
+.cm-editor .tok-tag {
+  color: #d73a49 !important; /* Red for tags */
+}
+
+.cm-editor .tok-attribute {
+  color: #6f42c1 !important; /* Purple for attributes */
+}
+
+/* Light mode Lezer classes */
+.cm-editor .cmt-keyword {
+  color: #d73a49 !important; /* Red */
+}
+
+.cm-editor .cmt-string {
+  color: #032f62 !important; /* Dark blue */
+}
+
+.cm-editor .cmt-comment {
+  color: #6a737d !important; /* Gray */
+  font-style: italic;
+}
+
+.cm-editor .cmt-number {
+  color: #005cc5 !important; /* Blue */
+}
+
+.cm-editor .cmt-operator {
+  color: #d73a49 !important; /* Red */
+}
+
+.cm-editor .cmt-builtin {
+  color: #6f42c1 !important; /* Purple */
+}
+
+.cm-editor .cmt-typeName {
+  color: #6f42c1 !important; /* Purple */
+}
+
+.cm-editor .cmt-variableName {
+  color: #e36209 !important; /* Orange */
 }
 
 .results-container {

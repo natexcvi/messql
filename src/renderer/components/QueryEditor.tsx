@@ -14,6 +14,8 @@ import { QueryResults } from "./QueryResults";
 import { DataTable } from "./DataTable";
 import { createSQLCompletions } from "../services/autocomplete";
 import { Prec } from "@codemirror/state";
+import { ayuMirage, ayuLight } from "../themes/ayuMirage";
+import { useTheme } from "../hooks/useTheme";
 
 interface QueryEditorProps {
   tab: QueryTab;
@@ -29,6 +31,7 @@ export interface QueryEditorRef {
 
 export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
   ({ tab, connection, onQueryChange, onQueryExecute, schemas }, ref) => {
+    const { isDark } = useTheme();
     const editorRef = useRef<HTMLDivElement>(null);
     const viewRef = useRef<EditorView | null>(null);
     const isInitializedRef = useRef(false);
@@ -67,6 +70,7 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
         extensions: [
           basicSetup,
           sql(),
+          isDark ? ayuMirage : ayuLight,
           autocompletion({
             override: [completions],
           }),
@@ -103,7 +107,7 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
           isInitializedRef.current = false;
         }
       };
-    }, [tab.id, schemas]); // Reinitialize when tab changes
+    }, [tab.id, schemas, isDark]); // Reinitialize when tab or theme changes
 
     // Update query content when tab.query changes (e.g., when switching tabs)
     useEffect(() => {
