@@ -60,117 +60,104 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
   };
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1000,
-    }}>
-      <div style={{
-        backgroundColor: 'white',
-        padding: '30px',
-        borderRadius: '8px',
-        width: '500px',
-        maxWidth: '90vw',
-        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
-      }}>
-        <h2 style={{ marginTop: 0, marginBottom: '20px' }}>New Connection</h2>
+    <div className="connection-modal-overlay">
+      <div className="connection-modal">
+        <div className="connection-modal-header">
+          <h2>New Connection</h2>
+        </div>
         
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="name">Connection Name</label>
-            <input
-              id="name"
-              name="name"
-              type="text"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="Optional display name"
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="host">Host</label>
-            <input
-              id="host"
-              name="host"
-              type="text"
-              value={formData.host}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="port">Port</label>
-            <input
-              id="port"
-              name="port"
-              type="number"
-              value={formData.port}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="database">Database</label>
-            <input
-              id="database"
-              name="database"
-              type="text"
-              value={formData.database}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="username">Username</label>
-            <input
-              id="username"
-              name="username"
-              type="text"
-              value={formData.username}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div className="connection-modal-body">
+            <div className="form-group">
+              <label htmlFor="name">Connection Name</label>
               <input
-                name="ssl"
-                type="checkbox"
-                checked={formData.ssl}
+                id="name"
+                name="name"
+                type="text"
+                value={formData.name}
                 onChange={handleChange}
+                placeholder="Optional display name"
               />
-              Use SSL
-            </label>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="host">Host</label>
+              <input
+                id="host"
+                name="host"
+                type="text"
+                value={formData.host}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="port">Port</label>
+              <input
+                id="port"
+                name="port"
+                type="number"
+                value={formData.port}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="database">Database</label>
+              <input
+                id="database"
+                name="database"
+                type="text"
+                value={formData.database}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="username">Username</label>
+              <input
+                id="username"
+                name="username"
+                type="text"
+                value={formData.username}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="password">Password</label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <div className="checkbox-group">
+                <input
+                  id="ssl"
+                  name="ssl"
+                  type="checkbox"
+                  checked={formData.ssl}
+                  onChange={handleChange}
+                />
+                <label htmlFor="ssl">Use SSL</label>
+              </div>
+            </div>
           </div>
 
-          <div className="form-actions">
+          <div className="connection-modal-footer">
             <button
               type="button"
-              className="btn-secondary"
+              className="btn btn-secondary"
               onClick={onCancel}
               disabled={isConnecting}
             >
@@ -178,7 +165,7 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
             </button>
             <button
               type="submit"
-              className="btn-primary"
+              className="btn btn-primary"
               disabled={isConnecting}
             >
               {isConnecting ? 'Connecting...' : 'Connect'}

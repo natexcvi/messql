@@ -64,7 +64,20 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
     return () => {
       view.destroy();
     };
-  }, [tab.id, tab.query, schemas, onQueryChange, onQueryExecute]); // Re-create editor when tab changes
+  }, [tab.id, schemas]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Update doc content when query changes without recreating editor
+  useEffect(() => {
+    if (viewRef.current && viewRef.current.state.doc.toString() !== tab.query) {
+      viewRef.current.dispatch({
+        changes: {
+          from: 0,
+          to: viewRef.current.state.doc.length,
+          insert: tab.query,
+        },
+      });
+    }
+  }, [tab.query]);
 
   const handleExecute = () => {
     if (viewRef.current) {
@@ -83,7 +96,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
           {tab.isExecuting ? 'Executing...' : 'Execute (⌘+Enter)'}
         </button>
         
-        <span style={{ marginLeft: '10px', color: '#666' }}>
+        <span className="toolbar-info">
           Connected to: {connection.name}
         </span>
       </div>
@@ -93,8 +106,6 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
           ref={editorRef}
           style={{
             height: '100%',
-            fontSize: '14px',
-            fontFamily: 'Monaco, "Courier New", monospace',
           }}
         />
       </div>

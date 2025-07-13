@@ -4,13 +4,15 @@ A modern PostgreSQL client for macOS built with Electron, React, and TypeScript.
 
 ## Features
 
-- **Multi-tab interface**: Work with multiple queries simultaneously
-- **Rich query editor**: CodeMirror-based editor with PostgreSQL syntax highlighting
+- **Modern macOS Design**: Native macOS look and feel with proper gradients, shadows, and typography
+- **Multi-tab interface**: Work with multiple queries simultaneously with clean tab management
+- **Rich query editor**: CodeMirror 6-based editor with PostgreSQL syntax highlighting and focus retention
 - **Schema-aware autocomplete**: Intelligent autocomplete for tables, columns, and SQL keywords
 - **Schema explorer**: Navigate database schemas and tables with search functionality
 - **Secure password storage**: Passwords are safely stored in the macOS keychain
-- **Query results display**: Clean, readable table display for query results
-- **Native macOS integration**: Traffic light controls and native menu bar
+- **Scrollable results**: Properly scrollable query results with resizable columns
+- **Responsive layout**: Flexible sidebar and main content areas that adapt to window size
+- **Native macOS integration**: Draggable title bar, traffic light controls, and native menu bar
 
 ## Development
 

@@ -24,8 +24,8 @@ export const TabBar: React.FC<TabBarProps> = ({
           className={`tab ${tab.id === activeTabId ? 'active' : ''}`}
           onClick={() => onTabSelect(tab.id)}
         >
-          <span>{tab.title}</span>
-          <span
+          <span className="tab-title">{tab.title}</span>
+          <button
             className="tab-close"
             onClick={(e) => {
               e.stopPropagation();
@@ -33,20 +33,13 @@ export const TabBar: React.FC<TabBarProps> = ({
             }}
           >
             ×
-          </span>
+          </button>
         </div>
       ))}
       
       <button
+        className="new-tab-button"
         onClick={onNewTab}
-        style={{
-          background: 'none',
-          border: 'none',
-          padding: '10px 15px',
-          cursor: 'pointer',
-          fontSize: '16px',
-          color: '#666',
-        }}
       >
         +
       </button>

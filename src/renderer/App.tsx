@@ -130,6 +130,7 @@ export const App: React.FC = () => {
 
   return (
     <div className="app">
+      <div className="top-bar" />
       <Sidebar
         connections={state.connections}
         activeConnectionId={state.activeConnectionId}

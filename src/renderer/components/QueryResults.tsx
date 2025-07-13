@@ -49,17 +49,11 @@ export const QueryResults: React.FC<QueryResultsProps> = ({
 
   return (
     <div className="results-container">
-      <div style={{ 
-        padding: '10px', 
-        backgroundColor: '#f8f8f8', 
-        borderBottom: '1px solid #e0e0e0',
-        fontSize: '12px',
-        color: '#666'
-      }}>
+      <div className="results-header">
         {rowCount} rows returned in {duration}ms
       </div>
       
-      <div style={{ flex: 1, overflow: 'auto' }}>
+      <div className="results-table-container">
         <table className="results-table">
           <thead>
             <tr>
@@ -74,7 +68,7 @@ export const QueryResults: React.FC<QueryResultsProps> = ({
                 {fields.map((field, fieldIndex) => (
                   <td key={fieldIndex}>
                     {row[field.name] === null ? (
-                      <span style={{ color: '#999', fontStyle: 'italic' }}>NULL</span>
+                      <span className="null-value">NULL</span>
                     ) : (
                       String(row[field.name])
                     )}

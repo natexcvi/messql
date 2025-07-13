@@ -49,63 +49,35 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <div className="sidebar">
-      <div style={{ marginBottom: '20px' }}>
-        <button
-          onClick={onNewConnection}
-          style={{
-            width: '100%',
-            padding: '10px',
-            backgroundColor: '#007aff',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '14px',
-            fontWeight: '600',
-          }}
-        >
-          + New Connection
-        </button>
-      </div>
+      <button
+        onClick={onNewConnection}
+        className="sidebar-button"
+      >
+        + New Connection
+      </button>
 
       {connections.length > 0 && (
-        <div style={{ marginBottom: '20px' }}>
-          <h4 style={{ marginBottom: '10px', color: '#fff' }}>Connections</h4>
+        <div className="sidebar-section">
+          <h4>Connections</h4>
           {connections.map(connection => (
             <div
               key={connection.id}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '8px 12px',
-                backgroundColor: activeConnectionId === connection.id ? '#444' : 'transparent',
-                borderRadius: '4px',
-                marginBottom: '4px',
-                cursor: 'pointer',
-              }}
+              className={`connection-item ${activeConnectionId === connection.id ? 'active' : ''}`}
               onClick={() => onConnectionSelect(connection.id)}
             >
-              <div>
-                <div style={{ fontWeight: '600', color: '#4a9eff' }}>
+              <div className="connection-info">
+                <div className="connection-name">
                   {connection.name}
                 </div>
-                <div style={{ fontSize: '12px', color: '#999' }}>
+                <div className="connection-details">
                   {connection.host}:{connection.port}/{connection.database}
                 </div>
               </div>
               <button
+                className="connection-remove"
                 onClick={(e) => {
                   e.stopPropagation();
                   onConnectionRemove(connection.id);
-                }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#999',
-                  cursor: 'pointer',
-                  fontSize: '16px',
-                  padding: '4px',
                 }}
               >
                 ×
@@ -116,7 +88,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       )}
 
       {activeConnectionId && (
-        <div>
+        <div className="sidebar-section">
           <input
             type="text"
             placeholder="Search schemas and tables..."

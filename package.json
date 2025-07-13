@@ -3,6 +3,12 @@
   "version": "1.0.0",
   "description": "A PostgreSQL client for macOS",
   "main": "dist/main.js",
+  "build": {
+    "appId": "com.example.messql",
+    "mac": {
+      "icon": "logo.icns"
+    }
+  },
   "scripts": {
     "build": "npm run build:main && npm run build:renderer",
     "build:main": "tsc -p tsconfig.main.json",
