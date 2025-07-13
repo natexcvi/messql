@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Menu } from "electron";
+import { app, BrowserWindow, ipcMain, Menu, nativeTheme } from "electron";
 import * as path from "path";
 import { DatabaseService } from "./services/database";
 import { KeychainService } from "./services/keychain";
@@ -224,5 +224,17 @@ const setupIpcHandlers = (): void => {
 
   ipcMain.handle("keychain:delete", async (_, service, account) => {
     return await keychainService.deletePassword(service, account);
+  });
+
+  // Theme handling
+  ipcMain.handle("theme:get", () => {
+    return nativeTheme.shouldUseDarkColors;
+  });
+
+  // Listen for theme changes and notify renderer
+  nativeTheme.on('updated', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('theme:changed', nativeTheme.shouldUseDarkColors);
+    }
   });
 };

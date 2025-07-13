@@ -74,6 +74,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   hasOpenTabs: () => {
     return hasOpenTabsCallback ? hasOpenTabsCallback() : false;
   },
+  theme: {
+    get: () => ipcRenderer.invoke('theme:get'),
+    onChange: (callback: (isDark: boolean) => void) => {
+      ipcRenderer.on('theme:changed', (_, isDark) => callback(isDark));
+    },
+    removeChangeListener: () => {
+      ipcRenderer.removeAllListeners('theme:changed');
+    },
+  },
 });
 
 declare global {
@@ -96,6 +105,11 @@ declare global {
       removeAllListeners: (channel: string) => void;
       setHasOpenTabsCallback: (callback: () => boolean) => void;
       hasOpenTabs: () => boolean;
+      theme: {
+        get: () => Promise<boolean>;
+        onChange: (callback: (isDark: boolean) => void) => void;
+        removeChangeListener: () => void;
+      };
     };
   }
 }

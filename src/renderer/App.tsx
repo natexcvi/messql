@@ -3,10 +3,13 @@ import { Sidebar } from './components/Sidebar';
 import { MainContent } from './components/MainContent';
 import { ConnectionForm } from './components/ConnectionForm';
 import { useDatabase } from './hooks/useDatabase';
+import { useTheme } from './hooks/useTheme';
 import { storageService } from './services/storage';
 import { DatabaseConnection, QueryTab, AppState } from './types';
 
 export const App: React.FC = () => {
+  const { isDark } = useTheme();
+  
   const [state, setState] = useState<AppState>({
     connections: [],
     activeConnectionId: null,
