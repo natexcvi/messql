@@ -152,15 +152,23 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
           />
         </div>
 
-        {tab.result ? (
-          <DataTable result={tab.result} />
-        ) : (
-          <QueryResults
-            result={tab.result}
-            error={tab.error}
-            isExecuting={tab.isExecuting}
-          />
-        )}
+        <div className="results-section">
+          {tab.error && (
+            <div className="error-banner">
+              <strong>Error:</strong> {tab.error}
+            </div>
+          )}
+          
+          {tab.result ? (
+            <DataTable result={tab.result} />
+          ) : !tab.error ? (
+            <QueryResults
+              result={tab.result}
+              error={tab.error}
+              isExecuting={tab.isExecuting}
+            />
+          ) : null}
+        </div>
       </div>
     );
   },

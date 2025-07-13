@@ -134,11 +134,13 @@ export const App: React.FC = () => {
       updateQueryTab(tabId, { 
         result, 
         isExecuting: false,
+        error: undefined,
         title: sql.split('\n')[0].substring(0, 30) + '...' || 'Query',
       });
     } catch (error) {
       updateQueryTab(tabId, { 
         isExecuting: false, 
+        result: undefined,
         error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
