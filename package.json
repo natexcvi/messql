@@ -6,7 +6,22 @@
   "build": {
     "appId": "com.example.messql",
     "mac": {
-      "icon": "logo.icns"
+      "icon": "logo.icns",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "files": [
+      "dist/**/*",
+      "logo.icns",
+      "src/main/**/*"
+    ],
+    "extraResources": [
+      "logo.icns"
+    ],
+    "directories": {
+      "buildResources": "."
     }
   },
   "scripts": {
@@ -18,7 +33,9 @@
     "dev:renderer": "webpack serve --mode development",
     "start": "electron .",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.main.json --noEmit",
-    "lint": "eslint src --ext .ts,.tsx"
+    "lint": "eslint src --ext .ts,.tsx",
+    "dist": "electron-builder",
+    "pack": "electron-builder --dir"
   },
   "keywords": [
     "electron",
@@ -38,6 +55,7 @@
     "@typescript-eslint/parser": "^6.0.0",
     "css-loader": "^6.8.1",
     "electron": "^27.0.0",
+    "electron-builder": "^26.0.12",
     "eslint": "^8.0.0",
     "eslint-plugin-react": "^7.33.0",
     "eslint-plugin-react-hooks": "^4.6.0",

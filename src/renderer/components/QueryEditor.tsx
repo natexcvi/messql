@@ -5,6 +5,7 @@ import { autocompletion, completionKeymap } from '@codemirror/autocomplete';
 import { keymap } from '@codemirror/view';
 import { DatabaseConnection, QueryTab, SchemaInfo } from '../types';
 import { QueryResults } from './QueryResults';
+import { ResizableTable } from './ResizableTable';
 import { createSQLCompletions } from '../services/autocomplete';
 
 interface QueryEditorProps {
@@ -48,6 +49,14 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
               return true;
             },
           },
+          {
+            key: 'Ctrl-Enter',
+            run: () => {
+              const query = view.state.doc.toString();
+              onQueryExecute(tab.id, query);
+              return true;
+            },
+          },
         ]),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
@@ -64,20 +73,8 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
     return () => {
       view.destroy();
     };
-  }, [tab.id, schemas]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [tab.id, tab.query, schemas, onQueryChange, onQueryExecute]);
 
-  // Update doc content when query changes without recreating editor
-  useEffect(() => {
-    if (viewRef.current && viewRef.current.state.doc.toString() !== tab.query) {
-      viewRef.current.dispatch({
-        changes: {
-          from: 0,
-          to: viewRef.current.state.doc.length,
-          insert: tab.query,
-        },
-      });
-    }
-  }, [tab.query]);
 
   const handleExecute = () => {
     if (viewRef.current) {
@@ -92,6 +89,7 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
         <button
           onClick={handleExecute}
           disabled={tab.isExecuting}
+          className="primary"
         >
           {tab.isExecuting ? 'Executing...' : 'Execute (⌘+Enter)'}
         </button>
@@ -110,11 +108,15 @@ export const QueryEditor: React.FC<QueryEditorProps> = ({
         />
       </div>
 
-      <QueryResults
-        result={tab.result}
-        error={tab.error}
-        isExecuting={tab.isExecuting}
-      />
+      {tab.result ? (
+        <ResizableTable result={tab.result} />
+      ) : (
+        <QueryResults
+          result={tab.result}
+          error={tab.error}
+          isExecuting={tab.isExecuting}
+        />
+      )}
     </div>
   );
 };

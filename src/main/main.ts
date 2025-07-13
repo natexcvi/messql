@@ -66,6 +66,21 @@ const createMenu = (): void => {
           },
         },
         { type: "separator" },
+        {
+          label: "Export to CSV",
+          accelerator: "CmdOrCtrl+Shift+C",
+          click: () => {
+            mainWindow.webContents.send("export-csv");
+          },
+        },
+        {
+          label: "Export to JSON",
+          accelerator: "CmdOrCtrl+Shift+J",
+          click: () => {
+            mainWindow.webContents.send("export-json");
+          },
+        },
+        { type: "separator" },
         { role: "close" },
       ],
     },

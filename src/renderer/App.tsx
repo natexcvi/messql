@@ -117,12 +117,26 @@ export const App: React.FC = () => {
       addQueryTab();
     };
 
+    const handleExportCSV = () => {
+      // Export functionality will be handled by the ResizableTable component
+      // when it has access to the current query results
+    };
+
+    const handleExportJSON = () => {
+      // Export functionality will be handled by the ResizableTable component
+      // when it has access to the current query results
+    };
+
     window.electronAPI.on('new-connection', handleNewConnection);
     window.electronAPI.on('new-query', handleNewQuery);
+    window.electronAPI.on('export-csv', handleExportCSV);
+    window.electronAPI.on('export-json', handleExportJSON);
 
     return () => {
       window.electronAPI.removeAllListeners('new-connection');
       window.electronAPI.removeAllListeners('new-query');
+      window.electronAPI.removeAllListeners('export-csv');
+      window.electronAPI.removeAllListeners('export-json');
     };
   }, [addQueryTab]);
 
