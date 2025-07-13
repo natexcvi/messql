@@ -4,6 +4,8 @@
 
 A modern PostgreSQL client for macOS built with Electron, React, and TypeScript.
 
+<img width="1204" height="804" alt="Screenshot 2025-07-14 at 0 35 23" src="https://github.com/user-attachments/assets/030a2641-55f9-425f-b8a3-e4482a0b91f2" />
+
 ## Features
 
 - **Clean Minimalistic Design**: Modern, clean interface with subtle colors and excellent typography
