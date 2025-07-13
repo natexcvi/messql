@@ -37,6 +37,8 @@ export interface ColumnInfo {
   isForeignKey: boolean;
 }
 
+let hasOpenTabsCallback: (() => boolean) | null = null;
+
 contextBridge.exposeInMainWorld('electronAPI', {
   database: {
     connect: (config: DatabaseConnection) => 
@@ -66,6 +68,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   removeAllListeners: (channel: string) => {
     ipcRenderer.removeAllListeners(channel);
   },
+  setHasOpenTabsCallback: (callback: () => boolean) => {
+    hasOpenTabsCallback = callback;
+  },
+  hasOpenTabs: () => {
+    return hasOpenTabsCallback ? hasOpenTabsCallback() : false;
+  },
 });
 
 declare global {
@@ -86,6 +94,8 @@ declare global {
       };
       on: (channel: string, callback: (...args: unknown[]) => void) => void;
       removeAllListeners: (channel: string) => void;
+      setHasOpenTabsCallback: (callback: () => boolean) => void;
+      hasOpenTabs: () => boolean;
     };
   }
 }

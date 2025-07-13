@@ -53,6 +53,8 @@ declare global {
       };
       on: (channel: string, callback: (...args: unknown[]) => void) => void;
       removeAllListeners: (channel: string) => void;
+      setHasOpenTabsCallback: (callback: () => boolean) => void;
+      hasOpenTabs: () => boolean;
     };
   }
 }

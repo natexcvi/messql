@@ -27,7 +27,19 @@ export const App: React.FC = () => {
       ...prev,
       connections: savedConnections,
     }));
+
+    // Set up callback for checking open tabs
+    window.electronAPI.setHasOpenTabsCallback(() => {
+      return state.queryTabs.length > 0;
+    });
   }, []);
+
+  // Update the callback when queryTabs changes
+  useEffect(() => {
+    window.electronAPI.setHasOpenTabsCallback(() => {
+      return state.queryTabs.length > 0;
+    });
+  }, [state.queryTabs.length]);
 
   const { connect, disconnect, query, getSchemas } = useDatabase();
 
@@ -141,6 +153,12 @@ export const App: React.FC = () => {
       addQueryTab();
     };
 
+    const handleCloseTab = () => {
+      if (state.activeTabId) {
+        removeQueryTab(state.activeTabId);
+      }
+    };
+
     const handleExportCSV = () => {
       // Export functionality will be handled by the ResizableTable component
       // when it has access to the current query results
@@ -151,18 +169,32 @@ export const App: React.FC = () => {
       // when it has access to the current query results
     };
 
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'w') {
+        e.preventDefault();
+        if (state.activeTabId) {
+          removeQueryTab(state.activeTabId);
+        }
+      }
+    };
+
     window.electronAPI.on('new-connection', handleNewConnection);
     window.electronAPI.on('new-query', handleNewQuery);
+    window.electronAPI.on('close-tab', handleCloseTab);
     window.electronAPI.on('export-csv', handleExportCSV);
     window.electronAPI.on('export-json', handleExportJSON);
+    
+    document.addEventListener('keydown', handleKeyDown);
 
     return () => {
       window.electronAPI.removeAllListeners('new-connection');
       window.electronAPI.removeAllListeners('new-query');
+      window.electronAPI.removeAllListeners('close-tab');
       window.electronAPI.removeAllListeners('export-csv');
       window.electronAPI.removeAllListeners('export-json');
+      document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [addQueryTab]);
+  }, [addQueryTab, removeQueryTab, state.activeTabId]);
 
   const activeConnection = state.connections.find(c => c.id === state.activeConnectionId);
 

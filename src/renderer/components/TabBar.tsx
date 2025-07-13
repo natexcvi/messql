@@ -42,8 +42,7 @@ export const TabBar: React.FC<TabBarProps> = ({
         onClick={onNewTab}
         title="New Query (⌘+T)"
       >
-        <span>+</span>
-        <span>New Query</span>
+        +
       </button>
     </div>
   );

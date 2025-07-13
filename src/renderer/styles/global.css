@@ -153,33 +153,38 @@ body {
 }
 
 .new-tab-button {
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-  border: none;
-  padding: 8px 12px;
-  cursor: pointer;
-  font-size: 14px;
-  color: #ffffff;
-  border-radius: 6px;
-  margin-left: 8px;
-  margin-bottom: 4px;
-  align-self: flex-end;
-  transition: all 0.15s ease;
-  font-weight: 500;
   display: flex;
   align-items: center;
-  gap: 4px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 8px 12px;
+  background-color: #f8f9fa;
+  border: 1px solid #e5e5e5;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  margin-right: 4px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 12px;
+  min-width: 40px;
+  position: relative;
+  color: #6b7280;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  justify-content: center;
+  border-left: 1px dashed #d1d5db;
+  border-right: 1px dashed #d1d5db;
+  border-top: 1px dashed #d1d5db;
 }
 
 .new-tab-button:hover {
-  background: linear-gradient(135deg, #2563eb, #1e40af);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  background-color: #ffffff;
+  color: #3b82f6;
+  border-left: 1px solid #e5e5e5;
+  border-right: 1px solid #e5e5e5;
+  border-top: 1px solid #e5e5e5;
 }
 
 .new-tab-button:active {
-  transform: translateY(0);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  background-color: #f3f4f6;
 }
 
 .query-editor {

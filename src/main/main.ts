@@ -24,6 +24,37 @@ const createWindow = (): void => {
     vibrancy: 'sidebar',
   });
 
+  // Handle window close event to check for open tabs
+  mainWindow.on('close', async (event) => {
+    event.preventDefault();
+    
+    try {
+      const hasOpenTabs = await mainWindow.webContents.executeJavaScript(`
+        window.electronAPI && window.electronAPI.hasOpenTabs ? window.electronAPI.hasOpenTabs() : false
+      `);
+      
+      if (hasOpenTabs) {
+        const { dialog } = await import('electron');
+        const choice = await dialog.showMessageBox(mainWindow, {
+          type: 'question',
+          buttons: ['Close', 'Cancel'],
+          defaultId: 1,
+          message: 'You have open query tabs. Are you sure you want to close the application?',
+          detail: 'Any unsaved work will be lost.'
+        });
+        
+        if (choice.response === 0) {
+          mainWindow.destroy();
+        }
+      } else {
+        mainWindow.destroy();
+      }
+    } catch (error) {
+      // If there's an error checking tabs, just close normally
+      mainWindow.destroy();
+    }
+  });
+
   const isDev = process.env.NODE_ENV === "development";
 
   if (isDev) {
@@ -63,6 +94,13 @@ const createMenu = (): void => {
           accelerator: "CmdOrCtrl+T",
           click: () => {
             mainWindow.webContents.send("new-query");
+          },
+        },
+        {
+          label: "Close Tab",
+          accelerator: "CmdOrCtrl+W",
+          click: () => {
+            mainWindow.webContents.send("close-tab");
           },
         },
         { type: "separator" },

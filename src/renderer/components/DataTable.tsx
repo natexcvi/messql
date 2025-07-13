@@ -12,7 +12,7 @@ interface ColumnState {
 }
 
 export const DataTable: React.FC<DataTableProps> = ({ result }) => {
-  const { rows, fields, rowCount, duration } = result;
+  const { rows = [], fields = [], rowCount = 0, duration = 0 } = result || {};
   const [columns, setColumns] = useState<Record<string, ColumnState>>(() => {
     const initial: Record<string, ColumnState> = {};
     fields.forEach(field => {
@@ -96,6 +96,17 @@ export const DataTable: React.FC<DataTableProps> = ({ result }) => {
   const handleExportJSON = useCallback(() => {
     exportToJSON(result, `query_results_${new Date().toISOString().split('T')[0]}.json`);
   }, [result]);
+
+  // Don't render if no fields or result
+  if (!result || !fields || fields.length === 0) {
+    return (
+      <div className="results-container">
+        <div className="results-header">
+          <div className="results-info">No data to display</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="results-container">
