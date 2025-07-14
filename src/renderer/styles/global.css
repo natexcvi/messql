@@ -1199,6 +1199,19 @@ body {
   overflow: hidden;
 }
 
+.data-table-header {
+  position: sticky;
+  top: 0;
+  border: 1px solid var(--border-primary);
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: left;
+  user-select: none;
+  z-index: 10;
+}
+
 /* DataTable specific styling */
 .data-table table {
   background-color: var(--bg-primary) !important;

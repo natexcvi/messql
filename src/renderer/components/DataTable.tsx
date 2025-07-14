@@ -124,8 +124,8 @@ export const DataTable: React.FC<DataTableProps> = ({ result }) => {
         </div>
       </div>
 
-      <div className="results-table-container">
-        <div className="data-table" style={{ overflow: 'auto' }}>
+      <div className="results-table-container" style={{ overflow: 'auto' }}>
+        <div className="data-table">
           <table style={{ borderCollapse: 'collapse', width: 'max-content' }}>
             <thead>
               <tr>
@@ -134,21 +134,12 @@ export const DataTable: React.FC<DataTableProps> = ({ result }) => {
                   return (
                     <th
                       key={field.name}
+                      className="data-table-header"
                       style={{
                         width: columnState.width,
                         minWidth: columnState.width,
                         maxWidth: columnState.width,
-                        position: 'sticky',
-                        top: 0,
-                        backgroundColor: columnState.isResizing ? '#eff6ff' : '#f8f9fa',
-                        border: '1px solid #e5e5e5',
-                        padding: '8px 12px',
-                        fontSize: '11px',
-                        fontWeight: 500,
-                        color: '#374151',
-                        textAlign: 'left',
-                        userSelect: 'none',
-                        zIndex: 10,
+                        backgroundColor: columnState.isResizing ? 'var(--accent-secondary)' : 'var(--bg-secondary)',
                       }}
                     >
                       {field.name}
