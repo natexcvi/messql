@@ -154,6 +154,16 @@ export const App: React.FC = () => {
     }
   }, [state.activeConnectionId, query, updateQueryTab]);
 
+  const saveConnection = useCallback((connection: DatabaseConnection) => {
+    const updatedConnections = [...state.connections, connection];
+    setState(prev => ({
+      ...prev,
+      connections: updatedConnections,
+      showConnectionForm: false,
+    }));
+    storageService.saveConnections(updatedConnections);
+  }, [state.connections]);
+
   useEffect(() => {
     const handleNewConnection = () => {
       setState(prev => ({ ...prev, showConnectionForm: true }));
@@ -224,7 +234,7 @@ export const App: React.FC = () => {
             
             const connection = state.connections.find(c => c.id === id);
             if (connection) {
-              await connect({ ...connection, maxConnections: connection.maxConnections || 10 });
+              await connect(connection);
               const schemas = await getSchemas(connection.id);
               setState(prev => ({ 
                 ...prev, 
@@ -246,7 +256,7 @@ export const App: React.FC = () => {
         onConnectionRemove={removeConnection}
         onNewConnection={() => setState(prev => ({ ...prev, showConnectionForm: true }))}
         onTableSelect={(schema, table) => {
-          const sql = `SELECT * FROM "${schema}"."${table}" LIMIT 100;`;
+          const sql = `SELECT * FROM ${schema}.${table} LIMIT 100;`;
           const newTab: QueryTab = {
             id: Date.now().toString(),
             title: `${schema}.${table}`,
@@ -258,7 +268,6 @@ export const App: React.FC = () => {
             queryTabs: [...prev.queryTabs, newTab],
             activeTabId: newTab.id,
           }));
-          executeQuery(newTab.id, sql);
         }}
       />
       
@@ -273,16 +282,6 @@ export const App: React.FC = () => {
         onQueryExecute={executeQuery}
         schemas={state.schemas}
       />
-
-  const saveConnection = useCallback((connection: DatabaseConnection) => {
-    const updatedConnections = [...state.connections, connection];
-    setState(prev => ({
-      ...prev,
-      connections: updatedConnections,
-      showConnectionForm: false,
-    }));
-    storageService.saveConnections(updatedConnections);
-  }, [state.connections]);
 
       {state.showConnectionForm && (
         <ConnectionForm

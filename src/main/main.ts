@@ -203,9 +203,6 @@ const setupIpcHandlers = (): void => {
     return await databaseService.getSchemas(connectionId);
   });
 
-  ipcMain.handle("db:getTables", async (_, connectionId, schema) => {
-    return await databaseService.getTables(connectionId, schema);
-  });
 
   ipcMain.handle(
     "db:getTableSchema",

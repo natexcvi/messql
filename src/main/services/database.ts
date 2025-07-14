@@ -23,7 +23,7 @@ export class DatabaseService {
       this.pools.set(config.id, pool);
       return { connectionId: config.id };
     } catch (error) {
-      return { connectionId: config.id, error: error.message };
+      return { connectionId: config.id, error: (error as Error).message };
     }
   }
 
