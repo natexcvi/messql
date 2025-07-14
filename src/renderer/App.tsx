@@ -268,7 +268,7 @@ export const App: React.FC = () => {
           });
           setState(prev => ({ ...prev, schemas: updatedSchemas }));
 
-          const sql = `SELECT * FROM ${schema}.${table} LIMIT 100;`;
+          const sql = `SELECT * FROM "${schema}"."${table}" LIMIT 100;`;
           const newTab: QueryTab = {
             id: Date.now().toString(),
             title: `"${schema}"."${table}"`,

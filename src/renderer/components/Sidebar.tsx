@@ -92,14 +92,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   {connection.host}:{connection.port}/{connection.database}
                 </div>
                 {connectionErrors[connection.id] && (
-                  <div style={{ 
-                    fontSize: '10px', 
-                    color: '#dc2626', 
-                    marginTop: '2px',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap'
-                  }}>
+                  <div 
+                    title={connectionErrors[connection.id]}
+                    style={{ 
+                      fontSize: '10px', 
+                      color: '#dc2626', 
+                      marginTop: '2px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      cursor: 'help'
+                    }}
+                  >
                     {connectionErrors[connection.id]}
                   </div>
                 )}

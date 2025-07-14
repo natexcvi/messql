@@ -140,6 +140,10 @@ export const DataTable: React.FC<DataTableProps> = ({ result }) => {
                         minWidth: columnState.width,
                         maxWidth: columnState.width,
                         backgroundColor: columnState.isResizing ? 'var(--accent-secondary)' : 'var(--bg-secondary)',
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 20,
+                        border: '1px solid var(--border-primary)',
                       }}
                     >
                       {field.name}
