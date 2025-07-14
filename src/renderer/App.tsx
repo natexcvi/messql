@@ -259,7 +259,7 @@ export const App: React.FC = () => {
           const sql = `SELECT * FROM ${schema}.${table} LIMIT 100;`;
           const newTab: QueryTab = {
             id: Date.now().toString(),
-            title: `${schema}.${table}`,
+            title: `"${schema}"."${table}"`,
             query: sql,
             isExecuting: false,
           };

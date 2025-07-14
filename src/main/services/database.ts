@@ -91,8 +91,7 @@ export class DatabaseService {
         JOIN information_schema.key_column_usage ku ON tc.constraint_name = ku.constraint_name
         WHERE tc.constraint_type = 'FOREIGN KEY'
       ) fk ON c.table_schema = fk.table_schema AND c.table_name = fk.table_name AND c.column_name = fk.column_name
-      WHERE t.table_schema = ANY($1)
-      AND t.table_type = 'BASE TABLE'
+      WHERE t.table_type = 'BASE TABLE'
       ORDER BY t.table_schema, t.table_name, c.ordinal_position;
     `;
 
