@@ -44,7 +44,7 @@ export const App: React.FC = () => {
     });
   }, [state.queryTabs.length]);
 
-  const { connect, disconnect, query, getSchemas } = useDatabase();
+  const { connect, disconnect, query, getSchemas, getTableSchema } = useDatabase();
 
   const [connectionError, setConnectionError] = useState<string | null>(null);
 
