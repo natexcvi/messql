@@ -2,28 +2,26 @@ import { useCallback } from 'react';
 import { DatabaseConnection, QueryResult, SchemaInfo, TableInfo } from '../types';
 
 export const useDatabase = () => {
-  const connect = useCallback(async (connection: DatabaseConnection): Promise<void> => {
+  const connect = useCallback(async (connection: DatabaseConnection): Promise<{ error?: string }> => {
     // For restored connections, we might not have a password in keychain yet
     // In that case, we'll need to prompt the user for the password
     const password = await window.electronAPI.keychain.get('postgres', connection.id);
     
     if (!password) {
-      throw new Error(`Password not found in keychain for connection "${connection.name}". Please reconnect to save the password.`);
+      return { error: `Password not found in keychain for connection "${connection.name}". Please reconnect to save the password.` };
     }
 
     // Connect to database
-    await window.electronAPI.database.connect({
-      ...connection,
-      // Password will be handled by the main process
-    });
+    const { error } = await window.electronAPI.database.connect(connection, password);
+    return { error };
   }, []);
 
   const disconnect = useCallback(async (connectionId: string): Promise<void> => {
     await window.electronAPI.database.disconnect(connectionId);
   }, []);
 
-  const query = useCallback(async (connectionId: string, sql: string): Promise<QueryResult> => {
-    return await window.electronAPI.database.query(connectionId, sql);
+  const query = useCallback(async (connectionId: string, sql: string, params: any[] = []): Promise<QueryResult> => {
+    return await window.electronAPI.database.query(connectionId, sql, params);
   }, []);
 
   const getSchemas = useCallback(async (connectionId: string): Promise<SchemaInfo[]> => {

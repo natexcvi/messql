@@ -46,30 +46,35 @@ export const App: React.FC = () => {
 
   const { connect, disconnect, query, getSchemas } = useDatabase();
 
+  const [connectionError, setConnectionError] = useState<string | null>(null);
+
   const addConnection = useCallback(async (connection: DatabaseConnection) => {
     setState(prev => ({ ...prev, isConnecting: true }));
+    setConnectionError(null);
     
-    try {
-      await connect(connection);
-      const schemas = await getSchemas(connection.id);
-      
-      const updatedConnections = [...state.connections, connection];
-      
-      setState(prev => ({
-        ...prev,
-        connections: updatedConnections,
-        activeConnectionId: connection.id,
-        schemas,
-        isConnecting: false,
-        showConnectionForm: false,
-      }));
+    const { error } = await connect(connection);
 
-      // Save to localStorage
-      storageService.saveConnections(updatedConnections);
-    } catch (error) {
-      console.error('Failed to connect:', error);
+    if (error) {
+      setConnectionError(error);
       setState(prev => ({ ...prev, isConnecting: false }));
+      return;
     }
+
+    const schemas = await getSchemas(connection.id);
+
+    const updatedConnections = [...state.connections, connection];
+
+    setState(prev => ({
+      ...prev,
+      connections: updatedConnections,
+      activeConnectionId: connection.id,
+      schemas,
+      isConnecting: false,
+      showConnectionForm: false,
+    }));
+
+    // Save to localStorage
+    storageService.saveConnections(updatedConnections);
   }, [connect, getSchemas, state.connections]);
 
   const removeConnection = useCallback(async (connectionId: string) => {
@@ -127,13 +132,13 @@ export const App: React.FC = () => {
     }));
   }, []);
 
-  const executeQuery = useCallback(async (tabId: string, sql: string) => {
+  const executeQuery = useCallback(async (tabId: string, sql: string, params: any[] = []) => {
     if (!state.activeConnectionId) return;
 
     updateQueryTab(tabId, { isExecuting: true, error: undefined });
     
     try {
-      const result = await query(state.activeConnectionId, sql);
+      const result = await query(state.activeConnectionId, sql, params);
       updateQueryTab(tabId, { 
         result, 
         isExecuting: false,
@@ -219,7 +224,7 @@ export const App: React.FC = () => {
             
             const connection = state.connections.find(c => c.id === id);
             if (connection) {
-              await connect(connection);
+              await connect({ ...connection, maxConnections: connection.maxConnections || 10 });
               const schemas = await getSchemas(connection.id);
               setState(prev => ({ 
                 ...prev, 
@@ -241,7 +246,7 @@ export const App: React.FC = () => {
         onConnectionRemove={removeConnection}
         onNewConnection={() => setState(prev => ({ ...prev, showConnectionForm: true }))}
         onTableSelect={(schema, table) => {
-          const sql = `SELECT * FROM ${schema}.${table} LIMIT 100;`;
+          const sql = `SELECT * FROM "${schema}"."${table}" LIMIT 100;`;
           const newTab: QueryTab = {
             id: Date.now().toString(),
             title: `${schema}.${table}`,
@@ -253,6 +258,7 @@ export const App: React.FC = () => {
             queryTabs: [...prev.queryTabs, newTab],
             activeTabId: newTab.id,
           }));
+          executeQuery(newTab.id, sql);
         }}
       />
       
@@ -268,11 +274,23 @@ export const App: React.FC = () => {
         schemas={state.schemas}
       />
 
+  const saveConnection = useCallback((connection: DatabaseConnection) => {
+    const updatedConnections = [...state.connections, connection];
+    setState(prev => ({
+      ...prev,
+      connections: updatedConnections,
+      showConnectionForm: false,
+    }));
+    storageService.saveConnections(updatedConnections);
+  }, [state.connections]);
+
       {state.showConnectionForm && (
         <ConnectionForm
           onConnect={addConnection}
+          onSave={saveConnection}
           onCancel={() => setState(prev => ({ ...prev, showConnectionForm: false }))}
           isConnecting={state.isConnecting}
+          error={connectionError}
         />
       )}
     </div>

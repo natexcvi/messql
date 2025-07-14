@@ -1,45 +1,49 @@
-import { Client } from 'pg';
+import { Pool } from 'pg';
 import { DatabaseConnection, QueryResult, SchemaInfo, TableInfo, ColumnInfo } from '../preload';
 
 export class DatabaseService {
-  private connections: Map<string, Client> = new Map();
+  private pools: Map<string, Pool> = new Map();
 
-  async connect(config: DatabaseConnection, password: string): Promise<string> {
-    const client = new Client({
+  async connect(config: DatabaseConnection, password: string): Promise<{ connectionId: string; error?: string }> {
+    const pool = new Pool({
       host: config.host,
       port: config.port,
       database: config.database,
       user: config.username,
       password: password,
       ssl: config.ssl,
+      max: config.maxConnections || 10,
     });
 
     try {
-      await client.connect();
-      this.connections.set(config.id, client);
-      return config.id;
+      // Test the connection
+      const client = await pool.connect();
+      client.release();
+
+      this.pools.set(config.id, pool);
+      return { connectionId: config.id };
     } catch (error) {
-      throw new Error(`Failed to connect to database: ${error}`);
+      return { connectionId: config.id, error: error.message };
     }
   }
 
   async disconnect(connectionId: string): Promise<void> {
-    const client = this.connections.get(connectionId);
-    if (client) {
-      await client.end();
-      this.connections.delete(connectionId);
+    const pool = this.pools.get(connectionId);
+    if (pool) {
+      await pool.end();
+      this.pools.delete(connectionId);
     }
   }
 
-  async query(connectionId: string, sql: string): Promise<QueryResult> {
-    const client = this.connections.get(connectionId);
-    if (!client) {
+  async query(connectionId: string, sql: string, params: any[] = []): Promise<QueryResult> {
+    const pool = this.pools.get(connectionId);
+    if (!pool) {
       throw new Error('Connection not found');
     }
 
     const startTime = Date.now();
     try {
-      const result = await client.query(sql);
+      const result = await pool.query(sql, params);
       const duration = Date.now() - startTime;
       
       return {
@@ -54,100 +58,81 @@ export class DatabaseService {
   }
 
   async getSchemas(connectionId: string): Promise<SchemaInfo[]> {
-    const sql = `
+    const schemasSql = `
       SELECT schema_name
       FROM information_schema.schemata
       WHERE schema_name NOT IN ('information_schema', 'pg_catalog', 'pg_toast')
       ORDER BY schema_name;
     `;
+    const schemasResult = await this.query(connectionId, schemasSql);
+    const schemaNames = schemasResult.rows.map(row => row.schema_name as string);
 
-    const result = await this.query(connectionId, sql);
-    const schemas: SchemaInfo[] = [];
-
-    for (const row of result.rows) {
-      const tables = await this.getTables(connectionId, row.schema_name as string);
-      schemas.push({
-        name: row.schema_name as string,
-        tables,
-      });
-    }
-
-    return schemas;
-  }
-
-  async getTables(connectionId: string, schema: string): Promise<TableInfo[]> {
-    const sql = `
-      SELECT table_name
-      FROM information_schema.tables
-      WHERE table_schema = $1
-      AND table_type = 'BASE TABLE'
-      ORDER BY table_name;
-    `;
-
-    const result = await this.query(connectionId, sql.replace('$1', `'${schema}'`));
-    const tables: TableInfo[] = [];
-
-    for (const row of result.rows) {
-      const columns = await this.getTableColumns(connectionId, schema, row.table_name as string);
-      tables.push({
-        name: row.table_name as string,
-        schema,
-        columns,
-      });
-    }
-
-    return tables;
-  }
-
-  async getTableSchema(connectionId: string, schema: string, table: string): Promise<TableInfo> {
-    const columns = await this.getTableColumns(connectionId, schema, table);
-    return {
-      name: table,
-      schema,
-      columns,
-    };
-  }
-
-  private async getTableColumns(connectionId: string, schema: string, table: string): Promise<ColumnInfo[]> {
-    const sql = `
-      SELECT 
+    const tablesAndColumnsSql = `
+      SELECT
+        t.table_schema,
+        t.table_name,
         c.column_name,
         c.data_type,
         c.is_nullable,
         c.column_default,
         CASE WHEN pk.column_name IS NOT NULL THEN true ELSE false END as is_primary_key,
         CASE WHEN fk.column_name IS NOT NULL THEN true ELSE false END as is_foreign_key
-      FROM information_schema.columns c
+      FROM information_schema.tables t
+      JOIN information_schema.columns c ON t.table_schema = c.table_schema AND t.table_name = c.table_name
       LEFT JOIN (
-        SELECT ku.column_name
+        SELECT ku.table_schema, ku.table_name, ku.column_name
         FROM information_schema.table_constraints tc
         JOIN information_schema.key_column_usage ku ON tc.constraint_name = ku.constraint_name
-        WHERE tc.table_schema = '${schema}'
-        AND tc.table_name = '${table}'
-        AND tc.constraint_type = 'PRIMARY KEY'
-      ) pk ON c.column_name = pk.column_name
+        WHERE tc.constraint_type = 'PRIMARY KEY'
+      ) pk ON c.table_schema = pk.table_schema AND c.table_name = pk.table_name AND c.column_name = pk.column_name
       LEFT JOIN (
-        SELECT ku.column_name
+        SELECT ku.table_schema, ku.table_name, ku.column_name
         FROM information_schema.table_constraints tc
         JOIN information_schema.key_column_usage ku ON tc.constraint_name = ku.constraint_name
-        WHERE tc.table_schema = '${schema}'
-        AND tc.table_name = '${table}'
-        AND tc.constraint_type = 'FOREIGN KEY'
-      ) fk ON c.column_name = fk.column_name
-      WHERE c.table_schema = '${schema}'
-      AND c.table_name = '${table}'
-      ORDER BY c.ordinal_position;
+        WHERE tc.constraint_type = 'FOREIGN KEY'
+      ) fk ON c.table_schema = fk.table_schema AND c.table_name = fk.table_name AND c.column_name = fk.column_name
+      WHERE t.table_schema = ANY($1)
+      AND t.table_type = 'BASE TABLE'
+      ORDER BY t.table_schema, t.table_name, c.ordinal_position;
     `;
 
-    const result = await this.query(connectionId, sql);
-    
-    return result.rows.map(row => ({
-      name: row.column_name as string,
-      type: row.data_type as string,
-      nullable: row.is_nullable === 'YES',
-      default: row.column_default as string | null,
-      isPrimaryKey: row.is_primary_key as boolean,
-      isForeignKey: row.is_foreign_key as boolean,
-    }));
+    const tablesAndColumnsResult = await this.query(connectionId, tablesAndColumnsSql, [schemaNames]);
+
+    const schemasMap = new Map<string, SchemaInfo>();
+
+    for (const schemaName of schemaNames) {
+      schemasMap.set(schemaName, { name: schemaName, tables: [] });
+    }
+
+    for (const row of tablesAndColumnsResult.rows) {
+      const schema = schemasMap.get(row.table_schema as string);
+      if (schema) {
+        let table = schema.tables.find(t => t.name === row.table_name);
+        if (!table) {
+          table = {
+            name: row.table_name as string,
+            schema: row.table_schema as string,
+            columns: [],
+          };
+          schema.tables.push(table);
+        }
+        table.columns.push({
+          name: row.column_name as string,
+          type: row.data_type as string,
+          nullable: row.is_nullable === 'YES',
+          default: row.column_default as string | null,
+          isPrimaryKey: row.is_primary_key as boolean,
+          isForeignKey: row.is_foreign_key as boolean,
+        });
+      }
+    }
+
+    return Array.from(schemasMap.values());
+  }
+
+  async getTableSchema(connectionId: string, schema: string, table: string): Promise<TableInfo | undefined> {
+    const schemas = await this.getSchemas(connectionId);
+    const currentSchema = schemas.find(s => s.name === schema);
+    return currentSchema?.tables.find(t => t.name === table);
   }
 }

@@ -3,15 +3,19 @@ import { DatabaseConnection } from '../types';
 import { useDatabase } from '../hooks/useDatabase';
 
 interface ConnectionFormProps {
-  onConnect: (connection: DatabaseConnection) => void;
+  onConnect: (connection: DatabaseConnection) => Promise<void>;
+  onSave: (connection: DatabaseConnection) => void;
   onCancel: () => void;
   isConnecting: boolean;
+  error: string | null;
 }
 
 export const ConnectionForm: React.FC<ConnectionFormProps> = ({
   onConnect,
+  onSave,
   onCancel,
   isConnecting,
+  error,
 }) => {
   const [formData, setFormData] = useState({
     name: '',
@@ -21,12 +25,15 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
     username: '',
     password: '',
     ssl: false,
+    maxConnections: 10,
   });
 
   const { savePassword } = useDatabase();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const submitter = (e.nativeEvent as any).submitter;
+    const action = submitter.name;
     
     const connectionId = `${formData.host}:${formData.port}:${formData.database}:${formData.username}`;
     
@@ -43,9 +50,14 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
         database: formData.database,
         username: formData.username,
         ssl: formData.ssl,
+        maxConnections: formData.maxConnections,
       };
-      
-      onConnect(connection);
+
+      if (action === 'save') {
+        onSave(connection);
+      } else {
+        await onConnect(connection);
+      }
     } catch (error) {
       console.error('Failed to save connection:', error);
     }
@@ -68,6 +80,7 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
         
         <form onSubmit={handleSubmit}>
           <div className="connection-modal-body">
+            {error && <div className="error-message">{error}</div>}
             <div className="form-group">
               <label htmlFor="name">Connection Name</label>
               <input
@@ -152,6 +165,16 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
                 <label htmlFor="ssl">Use SSL</label>
               </div>
             </div>
+            <div className="form-group">
+              <label htmlFor="maxConnections">Max Connections</label>
+              <input
+                id="maxConnections"
+                name="maxConnections"
+                type="number"
+                value={formData.maxConnections}
+                onChange={handleChange}
+              />
+            </div>
           </div>
 
           <div className="connection-modal-footer">
@@ -165,6 +188,15 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
             </button>
             <button
               type="submit"
+              name="save"
+              className="btn btn-secondary"
+              disabled={isConnecting}
+            >
+              Save
+            </button>
+            <button
+              type="submit"
+              name="connect"
               className="btn btn-primary"
               disabled={isConnecting}
             >

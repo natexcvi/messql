@@ -6,6 +6,7 @@ export interface DatabaseConnection {
   database: string;
   username: string;
   ssl?: boolean;
+  maxConnections?: number;
 }
 
 export interface QueryResult {
