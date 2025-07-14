@@ -8,6 +8,7 @@ interface ConnectionFormProps {
   onCancel: () => void;
   isConnecting: boolean;
   error: string | null;
+  editConnection?: DatabaseConnection;
 }
 
 export const ConnectionForm: React.FC<ConnectionFormProps> = ({
@@ -16,16 +17,17 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
   onCancel,
   isConnecting,
   error,
+  editConnection,
 }) => {
   const [formData, setFormData] = useState({
-    name: '',
-    host: 'localhost',
-    port: 5432,
-    database: '',
-    username: '',
+    name: editConnection?.name || '',
+    host: editConnection?.host || 'localhost',
+    port: editConnection?.port || 5432,
+    database: editConnection?.database || '',
+    username: editConnection?.username || '',
     password: '',
-    ssl: false,
-    maxConnections: 10,
+    ssl: editConnection?.ssl || false,
+    maxConnections: editConnection?.maxConnections || 10,
   });
 
   const { savePassword } = useDatabase();
@@ -35,11 +37,13 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
     const submitter = (e.nativeEvent as any).submitter;
     const action = submitter.name;
     
-    const connectionId = `${formData.host}:${formData.port}:${formData.database}:${formData.username}`;
+    const connectionId = editConnection?.id || `${formData.host}:${formData.port}:${formData.database}:${formData.username}`;
     
     try {
-      // Save password to keychain
-      await savePassword(connectionId, formData.password);
+      // Save password to keychain only if provided
+      if (formData.password) {
+        await savePassword(connectionId, formData.password);
+      }
       
       // Create connection object
       const connection: DatabaseConnection = {
@@ -75,7 +79,7 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
     <div className="connection-modal-overlay">
       <div className="connection-modal">
         <div className="connection-modal-header">
-          <h2>New Connection</h2>
+          <h2>{editConnection ? 'Edit Connection' : 'New Connection'}</h2>
         </div>
         
         <form onSubmit={handleSubmit}>
@@ -149,7 +153,8 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
                 type="password"
                 value={formData.password}
                 onChange={handleChange}
-                required
+                required={!editConnection}
+                placeholder={editConnection ? 'Leave blank to keep current password' : ''}
               />
             </div>
 

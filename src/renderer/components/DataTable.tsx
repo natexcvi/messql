@@ -124,11 +124,11 @@ export const DataTable: React.FC<DataTableProps> = ({ result }) => {
         </div>
       </div>
 
-      <div className="results-table-container" style={{ overflow: 'auto' }}>
-        <div className="data-table">
-          <table style={{ borderCollapse: 'collapse', width: 'max-content' }}>
-            <thead>
-              <tr>
+      <div className="results-table-container" style={{ overflow: 'auto', marginTop: 0, paddingTop: 0 }}>
+        <div className="data-table" style={{ marginTop: 0, paddingTop: 0 }}>
+          <table style={{ borderCollapse: 'collapse', width: 'max-content', borderSpacing: 0 }}>
+            <thead style={{ borderTop: '1px solid var(--border-primary)' }}>
+              <tr style={{ borderTop: '1px solid var(--border-primary)' }}>
                 {fields.map((field, index) => {
                   const columnState = columns[field.name] || { width: 150, isResizing: false };
                   return (
@@ -144,6 +144,9 @@ export const DataTable: React.FC<DataTableProps> = ({ result }) => {
                         top: 0,
                         zIndex: 20,
                         border: '1px solid var(--border-primary)',
+                        borderTop: '1px solid var(--border-primary)',
+                        margin: 0,
+                        padding: '10px 12px',
                       }}
                     >
                       {field.name}

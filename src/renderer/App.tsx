@@ -20,6 +20,8 @@ export const App: React.FC = () => {
     showConnectionForm: false,
   });
 
+  const [editingConnection, setEditingConnection] = useState<DatabaseConnection | null>(null);
+
   const [connectionErrors, setConnectionErrors] = useState<Record<string, string>>({});
   const [connectingConnectionIds, setConnectingConnectionIds] = useState<Set<string>>(new Set());
 
@@ -155,17 +157,28 @@ export const App: React.FC = () => {
   }, [state.activeConnectionId, query, updateQueryTab]);
 
   const saveConnection = useCallback((connection: DatabaseConnection) => {
-    const updatedConnections = [...state.connections, connection];
+    const updatedConnections = editingConnection
+      ? state.connections.map(c => c.id === connection.id ? connection : c)
+      : [...state.connections, connection];
+    
     setState(prev => ({
       ...prev,
       connections: updatedConnections,
       showConnectionForm: false,
     }));
+    
+    setEditingConnection(null);
     storageService.saveConnections(updatedConnections);
-  }, [state.connections]);
+  }, [state.connections, editingConnection]);
+
+  const editConnection = useCallback((connection: DatabaseConnection) => {
+    setEditingConnection(connection);
+    setState(prev => ({ ...prev, showConnectionForm: true }));
+  }, []);
 
   useEffect(() => {
     const handleNewConnection = () => {
+      setEditingConnection(null);
       setState(prev => ({ ...prev, showConnectionForm: true }));
     };
 
@@ -254,7 +267,11 @@ export const App: React.FC = () => {
           }
         }}
         onConnectionRemove={removeConnection}
-        onNewConnection={() => setState(prev => ({ ...prev, showConnectionForm: true }))}
+        onConnectionEdit={editConnection}
+        onNewConnection={() => {
+          setEditingConnection(null);
+          setState(prev => ({ ...prev, showConnectionForm: true }));
+        }}
         onTableSelect={async (schema, table) => {
           const tableSchema = await getTableSchema(state.activeConnectionId!, schema, table);
           const updatedSchemas = state.schemas.map(s => {
@@ -299,9 +316,13 @@ export const App: React.FC = () => {
         <ConnectionForm
           onConnect={addConnection}
           onSave={saveConnection}
-          onCancel={() => setState(prev => ({ ...prev, showConnectionForm: false }))}
+          onCancel={() => {
+            setEditingConnection(null);
+            setState(prev => ({ ...prev, showConnectionForm: false }));
+          }}
           isConnecting={state.isConnecting}
           error={connectionError}
+          editConnection={editingConnection || undefined}
         />
       )}
     </div>

@@ -9,6 +9,7 @@ interface SidebarProps {
   connectingConnectionIds?: Set<string>;
   onConnectionSelect: (id: string) => void;
   onConnectionRemove: (id: string) => void;
+  onConnectionEdit: (connection: DatabaseConnection) => void;
   onNewConnection: () => void;
   onTableSelect: (schema: string, table: string) => void;
 }
@@ -21,6 +22,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   connectingConnectionIds = new Set(),
   onConnectionSelect,
   onConnectionRemove,
+  onConnectionEdit,
   onNewConnection,
   onTableSelect,
 }) => {
@@ -108,15 +110,38 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </div>
                 )}
               </div>
-              <button
-                className="connection-remove"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onConnectionRemove(connection.id);
-                }}
-              >
-                ×
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <button
+                  className="connection-edit"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onConnectionEdit(connection);
+                  }}
+                  title="Edit connection"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#6b7280',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    padding: '4px',
+                    borderRadius: '4px',
+                    opacity: '0',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  ✏️
+                </button>
+                <button
+                  className="connection-remove"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onConnectionRemove(connection.id);
+                  }}
+                >
+                  ×
+                </button>
+              </div>
             </div>
           ))}
         </div>

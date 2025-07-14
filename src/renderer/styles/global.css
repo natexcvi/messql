@@ -1061,13 +1061,19 @@ body {
   transition: all 0.15s ease;
 }
 
-.connection-item:hover .connection-remove {
+.connection-item:hover .connection-remove,
+.connection-item:hover .connection-edit {
   opacity: 1;
 }
 
 .connection-remove:hover {
   background-color: #fef2f2;
   color: #dc2626;
+}
+
+.connection-edit:hover {
+  background-color: #f3f4f6;
+  color: #374151;
 }
 
 .search-input {
