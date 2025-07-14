@@ -95,7 +95,7 @@ export class DatabaseService {
       ORDER BY t.table_schema, t.table_name, c.ordinal_position;
     `;
 
-    const tablesAndColumnsResult = await this.query(connectionId, tablesAndColumnsSql, [schemaNames]);
+    const tablesAndColumnsResult = await this.query(connectionId, tablesAndColumnsSql);
 
     const schemasMap = new Map<string, SchemaInfo>();
 
