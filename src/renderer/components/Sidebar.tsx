@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { DatabaseConnection, SchemaInfo } from '../types';
 
 interface SidebarProps {
@@ -28,6 +28,37 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedSchemas, setExpandedSchemas] = useState<Set<string>>(new Set());
+  const [sidebarWidth, setSidebarWidth] = useState(280);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const isResizing = useRef(false);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isResizing.current = true;
+    
+    const startX = e.clientX;
+    const startWidth = sidebarWidth;
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing.current) return;
+      
+      const newWidth = Math.max(220, Math.min(400, startWidth + (e.clientX - startX)));
+      setSidebarWidth(newWidth);
+    };
+    
+    const handleMouseUp = () => {
+      isResizing.current = false;
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    document.body.style.cursor = 'ew-resize';
+    document.body.style.userSelect = 'none';
+  }, [sidebarWidth]);
 
   const toggleSchema = (schemaName: string) => {
     setExpandedSchemas(prev => {
@@ -60,7 +91,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   return (
-    <div className="sidebar">
+    <div 
+      ref={sidebarRef}
+      className="sidebar"
+      style={{ width: sidebarWidth }}
+    >
       <button
         onClick={onNewConnection}
         className="sidebar-button"
@@ -137,7 +172,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       )}
 
       {activeConnectionId && (
-        <div className="sidebar-section">
+        <div className="sidebar-section" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
           <input
             type="text"
             placeholder="Search schemas and tables..."
@@ -146,8 +181,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className="search-input"
           />
 
+          <h4>Database Schema</h4>
           <div className="schema-tree">
-            <h4>Database Schema</h4>
             {filteredSchemas.map(schema => (
               <div key={schema.name} className="schema-item">
                 <div
@@ -181,6 +216,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <p>Create a new connection to get started</p>
         </div>
       )}
+      
+      <div 
+        className="sidebar-resize-handle"
+        onMouseDown={handleMouseDown}
+        style={{
+          position: 'absolute',
+          right: -4,
+          top: 0,
+          bottom: 0,
+          width: 8,
+          cursor: 'ew-resize',
+          backgroundColor: 'transparent',
+          zIndex: 10,
+        }}
+      />
     </div>
   );
 };
