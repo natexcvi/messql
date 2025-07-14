@@ -255,7 +255,19 @@ export const App: React.FC = () => {
         }}
         onConnectionRemove={removeConnection}
         onNewConnection={() => setState(prev => ({ ...prev, showConnectionForm: true }))}
-        onTableSelect={(schema, table) => {
+        onTableSelect={async (schema, table) => {
+          const tableSchema = await getTableSchema(state.activeConnectionId!, schema, table);
+          const updatedSchemas = state.schemas.map(s => {
+            if (s.name === schema) {
+              return {
+                ...s,
+                tables: s.tables.map(t => t.name === table ? tableSchema : t),
+              };
+            }
+            return s;
+          });
+          setState(prev => ({ ...prev, schemas: updatedSchemas }));
+
           const sql = `SELECT * FROM ${schema}.${table} LIMIT 100;`;
           const newTab: QueryTab = {
             id: Date.now().toString(),
