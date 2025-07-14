@@ -118,19 +118,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onConnectionEdit(connection);
                   }}
                   title="Edit connection"
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: '#6b7280',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    padding: '4px',
-                    borderRadius: '4px',
-                    opacity: '0',
-                    transition: 'all 0.15s ease',
-                  }}
                 >
-                  ✏️
+                  ✎
                 </button>
                 <button
                   className="connection-remove"

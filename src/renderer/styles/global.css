@@ -1066,6 +1066,18 @@ body {
   opacity: 1;
 }
 
+.connection-edit {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: all 0.15s ease;
+}
+
 .connection-remove:hover {
   background-color: #fef2f2;
   color: #dc2626;
