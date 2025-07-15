@@ -9,10 +9,12 @@ import { EditorView, basicSetup } from "codemirror";
 import { sql, PostgreSQL } from "@codemirror/lang-sql";
 import { autocompletion, completionKeymap, acceptCompletion } from "@codemirror/autocomplete";
 import { keymap } from "@codemirror/view";
+import { Prec } from "@codemirror/state";
+import { dracula, ayuLight } from "thememirror";
 import { DatabaseConnection, QueryTab, SchemaInfo } from "../types";
 import { QueryResults } from "./QueryResults";
 import { DataTable } from "./DataTable";
-import { createSQLCompletions } from "../services/autocomplete";
+import { useTheme } from "../hooks/useTheme";
 
 // Convert our schema format to CodeMirror's expected format
 const convertSchemaForCodeMirror = (schemas: SchemaInfo[]) => {
@@ -27,9 +29,6 @@ const convertSchemaForCodeMirror = (schemas: SchemaInfo[]) => {
   
   return result;
 };
-import { Prec } from "@codemirror/state";
-import { ayuMirage, ayuLight } from "../themes/ayuMirage";
-import { useTheme } from "../hooks/useTheme";
 
 interface QueryEditorProps {
   tab: QueryTab;
@@ -94,7 +93,7 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
             schema: Object.keys(schema).length > 0 ? schema : undefined,
             upperCaseKeywords: true,
           }),
-          isDark ? ayuMirage : ayuLight,
+          isDark ? dracula : ayuLight,
           Prec.high(
             keymap.of([
               ...completionKeymap,
