@@ -7,30 +7,39 @@ import React, {
 } from "react";
 import { EditorView, basicSetup } from "codemirror";
 import { sql, PostgreSQL } from "@codemirror/lang-sql";
-import { autocompletion, completionKeymap, acceptCompletion } from "@codemirror/autocomplete";
+import {
+  autocompletion,
+  completionKeymap,
+  acceptCompletion,
+} from "@codemirror/autocomplete";
 import { keymap } from "@codemirror/view";
 import { Prec } from "@codemirror/state";
-import { dracula, ayuLight } from "thememirror";
+import { dracula, ayuLight, cobalt } from "thememirror";
 import { DatabaseConnection, QueryTab, SchemaInfo } from "../types";
 import { QueryResults } from "./QueryResults";
 import { DataTable } from "./DataTable";
 import { useTheme } from "../hooks/useTheme";
 
 // Convert our schema format to CodeMirror's expected format
-const convertSchemaForCodeMirror = (schemas: SchemaInfo[], selectedSchema?: string) => {
+const convertSchemaForCodeMirror = (
+  schemas: SchemaInfo[],
+  selectedSchema?: string,
+) => {
   const result: Record<string, string[]> = {};
-  
+
   // If a specific schema is selected, only use tables from that schema
-  const targetSchema = selectedSchema ? schemas.find(s => s.name === selectedSchema) : null;
+  const targetSchema = selectedSchema
+    ? schemas.find((s) => s.name === selectedSchema)
+    : null;
   const schemasToProcess = targetSchema ? [targetSchema] : schemas;
-  
-  schemasToProcess.forEach(schema => {
-    schema.tables.forEach(table => {
+
+  schemasToProcess.forEach((schema) => {
+    schema.tables.forEach((table) => {
       // Use simple array format for columns to avoid circular references
-      result[table.name] = table.columns.map(column => column.name);
+      result[table.name] = table.columns.map((column) => column.name);
     });
   });
-  
+
   return result;
 };
 
@@ -48,7 +57,10 @@ export interface QueryEditorRef {
 }
 
 export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
-  ({ tab, connection, onQueryChange, onQueryExecute, onSchemaChange, schemas }, ref) => {
+  (
+    { tab, connection, onQueryChange, onQueryExecute, onSchemaChange, schemas },
+    ref,
+  ) => {
     const { isDark } = useTheme();
     const editorRef = useRef<HTMLDivElement>(null);
     const viewRef = useRef<EditorView | null>(null);
@@ -85,7 +97,10 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
       try {
         schema = convertSchemaForCodeMirror(schemas, tab.selectedSchema);
       } catch (error) {
-        console.warn('Error converting schema for CodeMirror, using basic SQL without schema:', error);
+        console.warn(
+          "Error converting schema for CodeMirror, using basic SQL without schema:",
+          error,
+        );
         schema = {};
       }
 
@@ -98,7 +113,7 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
             schema: Object.keys(schema).length > 0 ? schema : undefined,
             upperCaseKeywords: true,
           }),
-          isDark ? dracula : ayuLight,
+          isDark ? cobalt : ayuLight,
           Prec.high(
             keymap.of([
               ...completionKeymap,
@@ -177,11 +192,11 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
             <label htmlFor={`schema-select-${tab.id}`}>Schema:</label>
             <select
               id={`schema-select-${tab.id}`}
-              value={tab.selectedSchema || ''}
+              value={tab.selectedSchema || ""}
               onChange={(e) => onSchemaChange(tab.id, e.target.value)}
               disabled={tab.isExecuting}
             >
-              {schemas.map(schema => (
+              {schemas.map((schema) => (
                 <option key={schema.name} value={schema.name}>
                   {schema.name}
                 </option>
@@ -207,7 +222,7 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
               <strong>Error:</strong> {tab.error}
             </div>
           )}
-          
+
           {tab.result ? (
             <DataTable result={tab.result} />
           ) : !tab.error ? (

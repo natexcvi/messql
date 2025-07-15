@@ -5,7 +5,7 @@ import { ConnectionForm } from './components/ConnectionForm';
 import { useDatabase } from './hooks/useDatabase';
 import { useTheme } from './hooks/useTheme';
 import { storageService } from './services/storage';
-import { DatabaseConnection, QueryTab, AppState } from './types';
+import { DatabaseConnection, QueryTab, AppState, SchemaInfo } from './types';
 
 export const App: React.FC = () => {
   const { isDark } = useTheme();
@@ -53,6 +53,71 @@ export const App: React.FC = () => {
 
   const [connectionError, setConnectionError] = useState<string | null>(null);
 
+  // Load default schema table schemas in background for immediate autocomplete
+  const loadDefaultSchemaTableSchemas = useCallback(async (connectionId: string, schemas: SchemaInfo[]) => {
+    // Find the default schema (prefer 'public', then first available)
+    const defaultSchema = schemas.find(s => s.name === 'public') || schemas[0];
+    if (!defaultSchema || defaultSchema.tables.length === 0) return;
+    
+    // Mark schema as loading
+    setState(prev => ({ 
+      ...prev, 
+      loadingSchemaDetails: new Set([...prev.loadingSchemaDetails, defaultSchema.name])
+    }));
+    
+    try {
+      // Load all table schemas for the default schema in parallel
+      const tableSchemaPromises = defaultSchema.tables.map(async (table) => {
+        const tableKey = `${defaultSchema.name}.${table.name}`;
+        
+        try {
+          const tableSchema = await getTableSchema(connectionId, defaultSchema.name, table.name);
+          return { key: tableKey, schema: tableSchema };
+        } catch (error) {
+          console.error(`Error loading schema for table ${table.name}:`, error);
+          return null;
+        }
+      });
+      
+      const results = await Promise.all(tableSchemaPromises);
+      
+      // Update cache and schema state
+      setState(prev => {
+        const newCache = { ...prev.tableSchemaCache };
+        const updatedSchemas = prev.schemas.map(s => {
+          if (s.name !== defaultSchema.name) return s;
+          
+          const updatedTables = s.tables.map(table => {
+            const result = results.find((r: any) => r && r.key === `${defaultSchema.name}.${table.name}`);
+            return result ? result.schema : table;
+          });
+          
+          return { ...s, tables: updatedTables };
+        });
+        
+        // Update cache
+        results.forEach((result: any) => {
+          if (result) {
+            newCache[result.key] = result.schema;
+          }
+        });
+        
+        return {
+          ...prev,
+          schemas: updatedSchemas,
+          tableSchemaCache: newCache,
+          loadingSchemaDetails: new Set([...prev.loadingSchemaDetails].filter(s => s !== defaultSchema.name))
+        };
+      });
+    } catch (error) {
+      console.error('Error loading default schema table schemas:', error);
+      setState(prev => ({ 
+        ...prev, 
+        loadingSchemaDetails: new Set([...prev.loadingSchemaDetails].filter(s => s !== defaultSchema.name))
+      }));
+    }
+  }, [getTableSchema]);
+
   const addConnection = useCallback(async (connection: DatabaseConnection) => {
     setState(prev => ({ ...prev, isConnecting: true }));
     setConnectionError(null);
@@ -83,7 +148,10 @@ export const App: React.FC = () => {
 
     // Save to localStorage
     storageService.saveConnections(updatedConnections);
-  }, [connect, getSchemas, state.connections]);
+    
+    // Load default schema table schemas in background
+    loadDefaultSchemaTableSchemas(connection.id, schemas);
+  }, [connect, getSchemas, state.connections, loadDefaultSchemaTableSchemas]);
 
   const removeConnection = useCallback(async (connectionId: string) => {
     await disconnect(connectionId);
@@ -353,6 +421,9 @@ export const App: React.FC = () => {
                 loadingTableSchemas: new Set(), // Clear loading state
                 loadingSchemaDetails: new Set() // Clear schema loading state
               }));
+              
+              // Load default schema table schemas in background
+              loadDefaultSchemaTableSchemas(connection.id, schemas);
             }
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
