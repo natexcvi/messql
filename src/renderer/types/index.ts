@@ -43,6 +43,7 @@ export interface QueryTab {
   result?: QueryResult;
   isExecuting: boolean;
   error?: string;
+  selectedSchema?: string; // The schema context for this tab
 }
 
 export interface AppState {
@@ -55,4 +56,5 @@ export interface AppState {
   showConnectionForm: boolean;
   loadingTableSchemas: Set<string>; // Track which tables are currently loading schema
   tableSchemaCache: Record<string, TableInfo>; // Cache for loaded table schemas
+  loadingSchemaDetails: Set<string>; // Track which schemas are loading detailed table info
 }

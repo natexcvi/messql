@@ -12,6 +12,7 @@ interface MainContentProps {
   onNewTab: () => void;
   onQueryChange: (tabId: string, query: string) => void;
   onQueryExecute: (tabId: string, query: string) => void;
+  onSchemaChange: (tabId: string, schema: string) => void;
   schemas: SchemaInfo[];
 }
 
@@ -24,6 +25,7 @@ export const MainContent: React.FC<MainContentProps> = ({
   onNewTab,
   onQueryChange,
   onQueryExecute,
+  onSchemaChange,
   schemas,
 }) => {
   const activeTab = queryTabs.find((tab) => tab.id === activeTabId);
@@ -67,6 +69,7 @@ export const MainContent: React.FC<MainContentProps> = ({
           connection={activeConnection}
           onQueryChange={onQueryChange}
           onQueryExecute={onQueryExecute}
+          onSchemaChange={onSchemaChange}
           schemas={schemas}
         />
       ) : (

@@ -17,10 +17,14 @@ import { DataTable } from "./DataTable";
 import { useTheme } from "../hooks/useTheme";
 
 // Convert our schema format to CodeMirror's expected format
-const convertSchemaForCodeMirror = (schemas: SchemaInfo[]) => {
+const convertSchemaForCodeMirror = (schemas: SchemaInfo[], selectedSchema?: string) => {
   const result: Record<string, string[]> = {};
   
-  schemas.forEach(schema => {
+  // If a specific schema is selected, only use tables from that schema
+  const targetSchema = selectedSchema ? schemas.find(s => s.name === selectedSchema) : null;
+  const schemasToProcess = targetSchema ? [targetSchema] : schemas;
+  
+  schemasToProcess.forEach(schema => {
     schema.tables.forEach(table => {
       // Use simple array format for columns to avoid circular references
       result[table.name] = table.columns.map(column => column.name);
@@ -35,6 +39,7 @@ interface QueryEditorProps {
   connection: DatabaseConnection;
   onQueryChange: (tabId: string, query: string) => void;
   onQueryExecute: (tabId: string, query: string) => void;
+  onSchemaChange: (tabId: string, schema: string) => void;
   schemas: SchemaInfo[];
 }
 
@@ -43,7 +48,7 @@ export interface QueryEditorRef {
 }
 
 export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
-  ({ tab, connection, onQueryChange, onQueryExecute, schemas }, ref) => {
+  ({ tab, connection, onQueryChange, onQueryExecute, onSchemaChange, schemas }, ref) => {
     const { isDark } = useTheme();
     const editorRef = useRef<HTMLDivElement>(null);
     const viewRef = useRef<EditorView | null>(null);
@@ -78,7 +83,7 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
 
       let schema;
       try {
-        schema = convertSchemaForCodeMirror(schemas);
+        schema = convertSchemaForCodeMirror(schemas, tab.selectedSchema);
       } catch (error) {
         console.warn('Error converting schema for CodeMirror, using basic SQL without schema:', error);
         schema = {};
@@ -131,7 +136,7 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
           isInitializedRef.current = false;
         }
       };
-    }, [tab.id, schemas, isDark]); // Reinitialize when tab or theme changes
+    }, [tab.id, tab.selectedSchema, schemas, isDark]); // Reinitialize when tab, schema, or theme changes
 
     // Update query content when tab.query changes (e.g., when switching tabs)
     useEffect(() => {
@@ -167,6 +172,22 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
           >
             {tab.isExecuting ? "Executing..." : "Execute (⌘+Enter)"}
           </button>
+
+          <div className="schema-selector">
+            <label htmlFor={`schema-select-${tab.id}`}>Schema:</label>
+            <select
+              id={`schema-select-${tab.id}`}
+              value={tab.selectedSchema || ''}
+              onChange={(e) => onSchemaChange(tab.id, e.target.value)}
+              disabled={tab.isExecuting}
+            >
+              {schemas.map(schema => (
+                <option key={schema.name} value={schema.name}>
+                  {schema.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
           <span className="toolbar-info">Connected to: {connection.name}</span>
         </div>
