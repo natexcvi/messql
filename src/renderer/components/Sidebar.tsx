@@ -7,6 +7,7 @@ interface SidebarProps {
   schemas: SchemaInfo[];
   connectionErrors?: Record<string, string>;
   connectingConnectionIds?: Set<string>;
+  loadingTableSchemas?: Set<string>;
   onConnectionSelect: (id: string) => void;
   onConnectionRemove: (id: string) => void;
   onConnectionEdit: (connection: DatabaseConnection) => void;
@@ -20,6 +21,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   schemas,
   connectionErrors = {},
   connectingConnectionIds = new Set(),
+  loadingTableSchemas = new Set(),
   onConnectionSelect,
   onConnectionRemove,
   onConnectionEdit,
@@ -110,7 +112,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div
               key={connection.id}
               className={`connection-item ${activeConnectionId === connection.id ? 'active' : ''}`}
-              onClick={() => onConnectionSelect(connection.id)}
+              onClick={() => connectingConnectionIds.size > 0 ? undefined : onConnectionSelect(connection.id)}
+              style={{ 
+                cursor: connectingConnectionIds.size > 0 ? 'not-allowed' : 'pointer',
+                opacity: connectingConnectionIds.size > 0 ? 0.6 : 1
+              }}
             >
               <div className="connection-info">
                 <div className="connection-name">
@@ -150,9 +156,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   className="connection-edit"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onConnectionEdit(connection);
+                    if (connectingConnectionIds.size === 0) {
+                      onConnectionEdit(connection);
+                    }
                   }}
                   title="Edit connection"
+                  disabled={connectingConnectionIds.size > 0}
+                  style={{ 
+                    opacity: connectingConnectionIds.size > 0 ? 0.4 : 1,
+                    cursor: connectingConnectionIds.size > 0 ? 'not-allowed' : 'pointer'
+                  }}
                 >
                   ✎
                 </button>
@@ -160,7 +173,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   className="connection-remove"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onConnectionRemove(connection.id);
+                    if (connectingConnectionIds.size === 0) {
+                      onConnectionRemove(connection.id);
+                    }
+                  }}
+                  disabled={connectingConnectionIds.size > 0}
+                  style={{ 
+                    opacity: connectingConnectionIds.size > 0 ? 0.4 : 1,
+                    cursor: connectingConnectionIds.size > 0 ? 'not-allowed' : 'pointer'
                   }}
                 >
                   ×
@@ -193,15 +213,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </div>
                 {expandedSchemas.has(schema.name) && (
                   <div className="table-list">
-                    {filteredTables(schema).map(table => (
-                      <div
-                        key={table.name}
-                        className="table-item"
-                        onClick={() => onTableSelect(schema.name, table.name)}
-                      >
-                        📄 {table.name}
-                      </div>
-                    ))}
+                    {filteredTables(schema).map(table => {
+                      const tableKey = `${schema.name}.${table.name}`;
+                      const isLoading = loadingTableSchemas.has(tableKey);
+                      
+                      return (
+                        <div
+                          key={table.name}
+                          className="table-item"
+                          onClick={() => !isLoading && onTableSelect(schema.name, table.name)}
+                          style={{ 
+                            cursor: isLoading ? 'wait' : 'pointer',
+                            opacity: isLoading ? 0.6 : 1,
+                            color: isLoading ? 'var(--text-quaternary)' : 'var(--text-tertiary)'
+                          }}
+                        >
+                          📄 {table.name}
+                          {isLoading && (
+                            <span style={{ 
+                              marginLeft: '8px', 
+                              fontSize: '10px', 
+                              color: 'var(--accent-primary)' 
+                            }}>
+                              Loading...
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>

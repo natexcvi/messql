@@ -141,7 +141,7 @@ export const DataTable: React.FC<DataTableProps> = ({ result }) => {
                         maxWidth: columnState.width,
                         backgroundColor: columnState.isResizing ? 'var(--accent-secondary)' : 'var(--bg-secondary)',
                         position: 'sticky',
-                        top: 0,
+                        top: -1,
                         zIndex: 20,
                         border: '1px solid var(--border-primary)',
                         borderTop: '2px solid var(--border-primary)',
@@ -150,7 +150,7 @@ export const DataTable: React.FC<DataTableProps> = ({ result }) => {
                       }}
                     >
                       {field.name}
-                      {index < fields.length - 1 && (
+                      {(index < fields.length - 1 || fields.length === 1) && (
                         <div
                           style={{
                             position: 'absolute',

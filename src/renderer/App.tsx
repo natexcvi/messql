@@ -18,6 +18,8 @@ export const App: React.FC = () => {
     activeTabId: null,
     isConnecting: false,
     showConnectionForm: false,
+    loadingTableSchemas: new Set(),
+    tableSchemaCache: {},
   });
 
   const [editingConnection, setEditingConnection] = useState<DatabaseConnection | null>(null);
@@ -73,6 +75,8 @@ export const App: React.FC = () => {
       schemas,
       isConnecting: false,
       showConnectionForm: false,
+      tableSchemaCache: {}, // Clear cache when adding new connection
+      loadingTableSchemas: new Set() // Clear loading state
     }));
 
     // Save to localStorage
@@ -240,6 +244,7 @@ export const App: React.FC = () => {
         schemas={state.schemas}
         connectionErrors={connectionErrors}
         connectingConnectionIds={connectingConnectionIds}
+        loadingTableSchemas={state.loadingTableSchemas}
         onConnectionSelect={async (id) => {
           try {
             setConnectionErrors(prev => ({ ...prev, [id]: '' }));
@@ -253,6 +258,8 @@ export const App: React.FC = () => {
                 ...prev, 
                 activeConnectionId: id,
                 schemas,
+                tableSchemaCache: {}, // Clear cache when switching connections
+                loadingTableSchemas: new Set() // Clear loading state
               }));
             }
           } catch (error) {
@@ -273,17 +280,53 @@ export const App: React.FC = () => {
           setState(prev => ({ ...prev, showConnectionForm: true }));
         }}
         onTableSelect={async (schema, table) => {
-          const tableSchema = await getTableSchema(state.activeConnectionId!, schema, table);
-          const updatedSchemas = state.schemas.map(s => {
-            if (s.name === schema) {
-              return {
-                ...s,
-                tables: s.tables.map(t => t.name === table ? tableSchema : t),
-              };
+          const tableKey = `${schema}.${table}`;
+          
+          // Check if we're already loading this table schema
+          if (state.loadingTableSchemas.has(tableKey)) {
+            return;
+          }
+          
+          // Check if we already have this table schema in cache
+          let tableSchema = state.tableSchemaCache[tableKey];
+          
+          if (!tableSchema) {
+            // Mark as loading
+            setState(prev => ({ 
+              ...prev, 
+              loadingTableSchemas: new Set([...prev.loadingTableSchemas, tableKey]) 
+            }));
+            
+            try {
+              tableSchema = await getTableSchema(state.activeConnectionId!, schema, table);
+              
+              // Cache the result and update schemas
+              const updatedSchemas = state.schemas.map(s => {
+                if (s.name === schema) {
+                  return {
+                    ...s,
+                    tables: s.tables.map(t => t.name === table ? tableSchema : t),
+                  };
+                }
+                return s;
+              });
+              
+              setState(prev => ({ 
+                ...prev, 
+                schemas: updatedSchemas,
+                tableSchemaCache: { ...prev.tableSchemaCache, [tableKey]: tableSchema },
+                loadingTableSchemas: new Set([...prev.loadingTableSchemas].filter(key => key !== tableKey))
+              }));
+            } catch (error) {
+              // Remove from loading state on error
+              setState(prev => ({ 
+                ...prev, 
+                loadingTableSchemas: new Set([...prev.loadingTableSchemas].filter(key => key !== tableKey))
+              }));
+              console.error('Error loading table schema:', error);
+              return;
             }
-            return s;
-          });
-          setState(prev => ({ ...prev, schemas: updatedSchemas }));
+          }
 
           const sql = `SELECT * FROM "${schema}"."${table}" LIMIT 100;`;
           const newTab: QueryTab = {

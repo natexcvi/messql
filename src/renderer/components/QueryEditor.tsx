@@ -6,13 +6,27 @@ import React, {
   useImperativeHandle,
 } from "react";
 import { EditorView, basicSetup } from "codemirror";
-import { sql } from "@codemirror/lang-sql";
-import { autocompletion, completionKeymap } from "@codemirror/autocomplete";
+import { sql, PostgreSQL } from "@codemirror/lang-sql";
+import { autocompletion, completionKeymap, acceptCompletion } from "@codemirror/autocomplete";
 import { keymap } from "@codemirror/view";
 import { DatabaseConnection, QueryTab, SchemaInfo } from "../types";
 import { QueryResults } from "./QueryResults";
 import { DataTable } from "./DataTable";
 import { createSQLCompletions } from "../services/autocomplete";
+
+// Convert our schema format to CodeMirror's expected format
+const convertSchemaForCodeMirror = (schemas: SchemaInfo[]) => {
+  const result: Record<string, string[]> = {};
+  
+  schemas.forEach(schema => {
+    schema.tables.forEach(table => {
+      // Use simple array format for columns to avoid circular references
+      result[table.name] = table.columns.map(column => column.name);
+    });
+  });
+  
+  return result;
+};
 import { Prec } from "@codemirror/state";
 import { ayuMirage, ayuLight } from "../themes/ayuMirage";
 import { useTheme } from "../hooks/useTheme";
@@ -63,20 +77,31 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
 
       if (isInitializedRef.current) return;
 
-      const completions = createSQLCompletions(schemas);
+      let schema;
+      try {
+        schema = convertSchemaForCodeMirror(schemas);
+      } catch (error) {
+        console.warn('Error converting schema for CodeMirror, using basic SQL without schema:', error);
+        schema = {};
+      }
 
       const view = new EditorView({
         doc: tab.query,
         extensions: [
           basicSetup,
-          sql(),
-          isDark ? ayuMirage : ayuLight,
-          autocompletion({
-            override: [completions],
+          sql({
+            dialect: PostgreSQL,
+            schema: Object.keys(schema).length > 0 ? schema : undefined,
+            upperCaseKeywords: true,
           }),
+          isDark ? ayuMirage : ayuLight,
           Prec.high(
             keymap.of([
               ...completionKeymap,
+              {
+                key: "Tab",
+                run: acceptCompletion,
+              },
               {
                 key: "Mod-Enter",
                 run: () => {

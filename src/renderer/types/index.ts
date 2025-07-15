@@ -53,4 +53,6 @@ export interface AppState {
   activeTabId: string | null;
   isConnecting: boolean;
   showConnectionForm: boolean;
+  loadingTableSchemas: Set<string>; // Track which tables are currently loading schema
+  tableSchemaCache: Record<string, TableInfo>; // Cache for loaded table schemas
 }
