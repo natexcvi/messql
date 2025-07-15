@@ -1,20 +1,15 @@
 import React, {
   useEffect,
   useRef,
-  useCallback,
   forwardRef,
   useImperativeHandle,
 } from "react";
 import { EditorView, basicSetup } from "codemirror";
 import { sql, PostgreSQL } from "@codemirror/lang-sql";
-import {
-  autocompletion,
-  completionKeymap,
-  acceptCompletion,
-} from "@codemirror/autocomplete";
+import { completionKeymap, acceptCompletion } from "@codemirror/autocomplete";
 import { keymap } from "@codemirror/view";
 import { Prec } from "@codemirror/state";
-import { dracula, ayuLight, cobalt } from "thememirror";
+import { ayuLight, coolGlow } from "thememirror";
 import { DatabaseConnection, QueryTab, SchemaInfo } from "../types";
 import { QueryResults } from "./QueryResults";
 import { DataTable } from "./DataTable";
@@ -113,7 +108,7 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
             schema: Object.keys(schema).length > 0 ? schema : undefined,
             upperCaseKeywords: true,
           }),
-          isDark ? cobalt : ayuLight,
+          isDark ? coolGlow : ayuLight,
           Prec.high(
             keymap.of([
               ...completionKeymap,
