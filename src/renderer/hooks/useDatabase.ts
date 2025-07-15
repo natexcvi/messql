@@ -36,10 +36,6 @@ export const useDatabase = () => {
     return await window.electronAPI.database.getTableSchema(connectionId, schema, table);
   }, []);
 
-  const getTableColumns = useCallback(async (connectionId: string, schema: string, table: string): Promise<ColumnInfo[]> => {
-    return await window.electronAPI.database.getTableColumns(connectionId, schema, table);
-  }, []);
-
   const savePassword = useCallback(async (connectionId: string, password: string): Promise<void> => {
     await window.electronAPI.keychain.set('postgres', connectionId, password);
   }, []);
@@ -59,7 +55,6 @@ export const useDatabase = () => {
     getSchemas,
     getTables,
     getTableSchema,
-    getTableColumns,
     savePassword,
     getPassword,
     deletePassword,

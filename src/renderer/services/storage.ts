@@ -5,6 +5,7 @@ const CONNECTIONS_KEY = 'messql_connections';
 export interface StoredConnection {
   id: string;
   name: string;
+  type: 'postgresql' | 'mysql';
   host: string;
   port: number;
   database: string;
@@ -19,6 +20,7 @@ export const storageService = {
       const storedConnections: StoredConnection[] = connections.map(conn => ({
         id: conn.id,
         name: conn.name,
+        type: conn.type,
         host: conn.host,
         port: conn.port,
         database: conn.database,
@@ -41,6 +43,7 @@ export const storageService = {
       return storedConnections.map(conn => ({
         id: conn.id,
         name: conn.name,
+        type: conn.type || 'postgresql',
         host: conn.host,
         port: conn.port,
         database: conn.database,

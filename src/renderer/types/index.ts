@@ -1,4 +1,5 @@
 export interface DatabaseConnection {
+  type: 'postgresql' | 'mysql';
   id: string;
   name: string;
   host: string;

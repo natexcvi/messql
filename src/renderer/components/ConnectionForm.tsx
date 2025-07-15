@@ -20,6 +20,7 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
   editConnection,
 }) => {
   const [formData, setFormData] = useState({
+    type: editConnection?.type || 'postgresql',
     name: editConnection?.name || '',
     host: editConnection?.host || 'localhost',
     port: editConnection?.port || 5432,
@@ -48,6 +49,7 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
       // Create connection object
       const connection: DatabaseConnection = {
         id: connectionId,
+        type: formData.type,
         name: formData.name || `${formData.host}:${formData.port}/${formData.database}`,
         host: formData.host,
         port: formData.port,
@@ -67,11 +69,12 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    const isCheckbox = type === 'checkbox';
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value,
+      [name]: isCheckbox ? (e.target as HTMLInputElement).checked : value,
     }));
   };
 
@@ -85,6 +88,20 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
         <form onSubmit={handleSubmit}>
           <div className="connection-modal-body">
             {error && <div className="error-message">{error}</div>}
+            <div className="form-group">
+              <label htmlFor="type">Database Type</label>
+              <select
+                id="type"
+                name="type"
+                value={formData.type}
+                onChange={handleChange}
+                required
+              >
+                <option value="postgresql">PostgreSQL</option>
+                <option value="mysql">MySQL</option>
+              </select>
+            </div>
+
             <div className="form-group">
               <label htmlFor="name">Connection Name</label>
               <input
