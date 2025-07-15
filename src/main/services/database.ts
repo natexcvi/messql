@@ -77,11 +77,34 @@ export class DatabaseService {
       schemasMap.get(schemaName)!.tables.push({
         name: row.table_name as string,
         schema: schemaName,
-        columns: [],
+        columns: [], // Initially empty, to be lazy-loaded
       });
     }
 
     return Array.from(schemasMap.values());
+  }
+
+  async getTableColumns(connectionId: string, schema: string, table: string): Promise<ColumnInfo[]> {
+    const sql = `
+      SELECT
+        c.column_name,
+        c.data_type,
+        c.is_nullable,
+        c.column_default
+      FROM information_schema.columns c
+      WHERE c.table_schema = $1 AND c.table_name = $2
+      ORDER BY c.ordinal_position;
+    `;
+
+    const result = await this.query(connectionId, sql, [schema, table]);
+    return result.rows.map(row => ({
+      name: row.column_name as string,
+      type: row.data_type as string,
+      nullable: row.is_nullable === 'YES',
+      default: row.column_default as string | null,
+      isPrimaryKey: false, // This info is not essential for autocomplete
+      isForeignKey: false, // and can be fetched later if needed
+    }));
   }
 
   async getTableSchema(connectionId: string, schema: string, table: string): Promise<TableInfo> {

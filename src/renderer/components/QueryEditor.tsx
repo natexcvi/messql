@@ -7,15 +7,16 @@ import React, {
 } from "react";
 import { EditorView, basicSetup } from "codemirror";
 import { sql } from "@codemirror/lang-sql";
-import { autocompletion, completionKeymap } from "@codemirror/autocomplete";
+import { autocompletion, completionKeymap, acceptCompletion } from "@codemirror/autocomplete";
+import { syntaxTree } from "@codemirror/language";
 import { keymap } from "@codemirror/view";
 import { DatabaseConnection, QueryTab, SchemaInfo } from "../types";
 import { QueryResults } from "./QueryResults";
 import { DataTable } from "./DataTable";
-import { createSQLCompletions } from "../services/autocomplete";
 import { Prec } from "@codemirror/state";
 import { ayuMirage, ayuLight } from "../themes/ayuMirage";
 import { useTheme } from "../hooks/useTheme";
+import { useDatabase } from "../hooks/useDatabase";
 
 interface QueryEditorProps {
   tab: QueryTab;
@@ -23,6 +24,7 @@ interface QueryEditorProps {
   onQueryChange: (tabId: string, query: string) => void;
   onQueryExecute: (tabId: string, query: string) => void;
   schemas: SchemaInfo[];
+  onSchemaUpdate: (schemas: SchemaInfo[]) => void;
 }
 
 export interface QueryEditorRef {
@@ -30,8 +32,9 @@ export interface QueryEditorRef {
 }
 
 export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
-  ({ tab, connection, onQueryChange, onQueryExecute, schemas }, ref) => {
+  ({ tab, connection, onQueryChange, onQueryExecute, schemas, onSchemaUpdate }, ref) => {
     const { isDark } = useTheme();
+    const { getTableColumns } = useDatabase();
     const editorRef = useRef<HTMLDivElement>(null);
     const viewRef = useRef<EditorView | null>(null);
     const isInitializedRef = useRef(false);
@@ -63,20 +66,66 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
 
       if (isInitializedRef.current) return;
 
-      const completions = createSQLCompletions(schemas);
-
       const view = new EditorView({
         doc: tab.query,
         extensions: [
           basicSetup,
-          sql(),
+          sql({
+            dialect: connection.type,
+            schema: schemas.reduce((acc, schema) => {
+              acc[schema.name] = schema.tables.map(t => t.name);
+              return acc;
+            }, {}),
+            tables: schemas.flatMap(s => s.tables).map(t => ({
+              label: t.name,
+              columns: t.columns.map(c => ({ label: c.name }))
+            })),
+          }),
           isDark ? ayuMirage : ayuLight,
           autocompletion({
-            override: [completions],
+            override: [
+              async (context) => {
+                const { state, pos } = context;
+                const tree = syntaxTree(state);
+                const token = tree.resolve(pos, -1);
+
+                // If we are inside a table name, fetch columns
+                if (token.name === "Identifier" || token.name === "QuotedIdentifier") {
+                  const tableName = state.sliceDoc(token.from, token.to);
+                  const schema = schemas.find(s => s.tables.some(t => t.name === tableName));
+                  if (schema) {
+                    const table = schema.tables.find(t => t.name === tableName);
+                    if (table && table.columns.length === 0) {
+                      const columns = await getTableColumns(connection.id, schema.name, table.name);
+                      const newSchemas = schemas.map(s => {
+                        if (s.name === schema.name) {
+                          return {
+                            ...s,
+                            tables: s.tables.map(t => {
+                              if (t.name === tableName) {
+                                return { ...t, columns };
+                              }
+                              return t;
+                            }),
+                          };
+                        }
+                        return s;
+                      });
+                      onSchemaUpdate(newSchemas);
+                    }
+                  }
+                }
+                return null;
+              },
+            ],
           }),
           Prec.high(
             keymap.of([
               ...completionKeymap,
+              {
+                key: "Tab",
+                run: acceptCompletion,
+              },
               {
                 key: "Mod-Enter",
                 run: () => {

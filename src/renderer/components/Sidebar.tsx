@@ -99,12 +99,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <button
         onClick={onNewConnection}
         className="sidebar-button"
+        disabled={connectingConnectionIds.size > 0}
       >
         + New Connection
       </button>
 
       {connections.length > 0 && (
-        <div className="sidebar-section">
+        <div className={`sidebar-section ${connectingConnectionIds.size > 0 ? 'disabled' : ''}`}>
           <h4>Connections</h4>
           {connections.map(connection => (
             <div

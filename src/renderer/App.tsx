@@ -310,6 +310,7 @@ export const App: React.FC = () => {
         onQueryChange={(tabId, query) => updateQueryTab(tabId, { query })}
         onQueryExecute={executeQuery}
         schemas={state.schemas}
+        onSchemaUpdate={(schemas) => setState(prev => ({ ...prev, schemas }))}
       />
 
       {state.showConnectionForm && (

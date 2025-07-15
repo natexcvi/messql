@@ -13,6 +13,7 @@ interface MainContentProps {
   onQueryChange: (tabId: string, query: string) => void;
   onQueryExecute: (tabId: string, query: string) => void;
   schemas: SchemaInfo[];
+  onSchemaUpdate: (schemas: SchemaInfo[]) => void;
 }
 
 export const MainContent: React.FC<MainContentProps> = ({
@@ -25,6 +26,7 @@ export const MainContent: React.FC<MainContentProps> = ({
   onQueryChange,
   onQueryExecute,
   schemas,
+  onSchemaUpdate,
 }) => {
   const activeTab = queryTabs.find((tab) => tab.id === activeTabId);
   const queryEditorRef = useRef<QueryEditorRef>(null);
@@ -68,6 +70,7 @@ export const MainContent: React.FC<MainContentProps> = ({
           onQueryChange={onQueryChange}
           onQueryExecute={onQueryExecute}
           schemas={schemas}
+          onSchemaUpdate={onSchemaUpdate}
         />
       ) : (
         <div className="empty-state">

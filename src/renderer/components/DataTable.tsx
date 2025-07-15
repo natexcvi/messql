@@ -141,7 +141,7 @@ export const DataTable: React.FC<DataTableProps> = ({ result }) => {
                         maxWidth: columnState.width,
                         backgroundColor: columnState.isResizing ? 'var(--accent-secondary)' : 'var(--bg-secondary)',
                         position: 'sticky',
-                        top: 0,
+                        top: -1,
                         zIndex: 20,
                         border: '1px solid var(--border-primary)',
                         borderTop: '2px solid var(--border-primary)',
@@ -150,31 +150,29 @@ export const DataTable: React.FC<DataTableProps> = ({ result }) => {
                       }}
                     >
                       {field.name}
-                      {index < fields.length - 1 && (
-                        <div
-                          style={{
-                            position: 'absolute',
-                            right: -2,
-                            top: 0,
-                            bottom: 0,
-                            width: 4,
-                            cursor: 'col-resize',
-                            backgroundColor: columnState.isResizing ? '#3b82f6' : 'transparent',
-                            zIndex: 11,
-                          }}
-                          onMouseDown={(e) => handleMouseDown(e, field.name)}
-                          onMouseEnter={(e) => {
-                            if (!resizeState.current) {
-                              (e.target as HTMLElement).style.backgroundColor = '#3b82f6';
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            if (!resizeState.current) {
-                              (e.target as HTMLElement).style.backgroundColor = 'transparent';
-                            }
-                          }}
-                        />
-                      )}
+                      <div
+                        style={{
+                          position: 'absolute',
+                          right: -2,
+                          top: 0,
+                          bottom: 0,
+                          width: 4,
+                          cursor: 'col-resize',
+                          backgroundColor: columnState.isResizing ? '#3b82f6' : 'transparent',
+                          zIndex: 11,
+                        }}
+                        onMouseDown={(e) => handleMouseDown(e, field.name)}
+                        onMouseEnter={(e) => {
+                          if (!resizeState.current) {
+                            (e.target as HTMLElement).style.backgroundColor = '#3b82f6';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!resizeState.current) {
+                            (e.target as HTMLElement).style.backgroundColor = 'transparent';
+                          }
+                        }}
+                      />
                     </th>
                   );
                 })}

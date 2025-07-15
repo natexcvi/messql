@@ -211,6 +211,17 @@ const setupIpcHandlers = (): void => {
     },
   );
 
+  ipcMain.handle(
+    "db:getTableColumns",
+    async (_, connectionId, schema, table) => {
+      return await databaseService.getTableColumns(
+        connectionId,
+        schema,
+        table,
+      );
+    },
+  );
+
   ipcMain.handle("keychain:set", async (_, service, account, password) => {
     return await keychainService.setPassword(service, account, password);
   });
