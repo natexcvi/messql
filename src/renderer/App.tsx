@@ -221,14 +221,9 @@ export const App: React.FC = () => {
     
     try {
       const tab = state.queryTabs.find(t => t.id === tabId);
-      let finalSql = sql;
+      const schema = tab?.selectedSchema;
       
-      // If the tab has a selected schema, prepend SET search_path to set the schema context
-      if (tab && tab.selectedSchema && tab.selectedSchema !== 'public') {
-        finalSql = `SET search_path = "${tab.selectedSchema}", public;\n${sql}`;
-      }
-      
-      const result = await query(state.activeConnectionId, finalSql, params);
+      const result = await query(state.activeConnectionId, sql, params, schema);
       updateQueryTab(tabId, { 
         result, 
         isExecuting: false,
