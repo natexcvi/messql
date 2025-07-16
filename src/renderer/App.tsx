@@ -5,7 +5,7 @@ import { ConnectionForm } from './components/ConnectionForm';
 import { useDatabase } from './hooks/useDatabase';
 import { useTheme } from './hooks/useTheme';
 import { storageService } from './services/storage';
-import { DatabaseConnection, QueryTab, AppState, SchemaInfo } from './types';
+import { DatabaseConnection, QueryTab, AppState, SchemaInfo, TableInfo } from './types';
 
 export const App: React.FC = () => {
   const { isDark } = useTheme();
@@ -49,7 +49,7 @@ export const App: React.FC = () => {
     });
   }, [state.queryTabs.length]);
 
-  const { connect, disconnect, query, getSchemas, getTableSchema } = useDatabase();
+  const { connect, disconnect, query, getSchemas, getTableSchema, getSchemaTableSchemas } = useDatabase();
 
   const [connectionError, setConnectionError] = useState<string | null>(null);
 
@@ -66,20 +66,8 @@ export const App: React.FC = () => {
     }));
     
     try {
-      // Load all table schemas for the default schema in parallel
-      const tableSchemaPromises = defaultSchema.tables.map(async (table) => {
-        const tableKey = `${defaultSchema.name}.${table.name}`;
-        
-        try {
-          const tableSchema = await getTableSchema(connectionId, defaultSchema.name, table.name);
-          return { key: tableKey, schema: tableSchema };
-        } catch (error) {
-          console.error(`Error loading schema for table ${table.name}:`, error);
-          return null;
-        }
-      });
-      
-      const results = await Promise.all(tableSchemaPromises);
+      // Use the optimized method to load all table schemas at once
+      const tableSchemas = await getSchemaTableSchemas(connectionId, defaultSchema.name);
       
       // Update cache and schema state
       setState(prev => {
@@ -87,19 +75,14 @@ export const App: React.FC = () => {
         const updatedSchemas = prev.schemas.map(s => {
           if (s.name !== defaultSchema.name) return s;
           
-          const updatedTables = s.tables.map(table => {
-            const result = results.find((r: any) => r && r.key === `${defaultSchema.name}.${table.name}`);
-            return result ? result.schema : table;
-          });
-          
-          return { ...s, tables: updatedTables };
+          // Replace the tables with the fully loaded table schemas
+          return { ...s, tables: tableSchemas };
         });
         
         // Update cache
-        results.forEach((result: any) => {
-          if (result) {
-            newCache[result.key] = result.schema;
-          }
+        tableSchemas.forEach(table => {
+          const tableKey = `${defaultSchema.name}.${table.name}`;
+          newCache[tableKey] = table;
         });
         
         return {
@@ -116,7 +99,7 @@ export const App: React.FC = () => {
         loadingSchemaDetails: new Set([...prev.loadingSchemaDetails].filter(s => s !== defaultSchema.name))
       }));
     }
-  }, [getTableSchema]);
+  }, [getSchemaTableSchemas]);
 
   const addConnection = useCallback(async (connection: DatabaseConnection) => {
     setState(prev => ({ ...prev, isConnecting: true }));
@@ -256,7 +239,7 @@ export const App: React.FC = () => {
         }
         try {
           const tableSchema = await getTableSchema(connectionId, schemaName, table.name);
-          return { key: tableKey, schema: tableSchema };
+          return tableSchema ? { key: tableKey, schema: tableSchema } : null;
         } catch (error) {
           console.error(`Error loading schema for table ${table.name}:`, error);
           return null;
@@ -440,7 +423,7 @@ export const App: React.FC = () => {
           }
           
           // Check if we already have this table schema in cache
-          let tableSchema = state.tableSchemaCache[tableKey];
+          let tableSchema: TableInfo | undefined = state.tableSchemaCache[tableKey];
           
           if (!tableSchema) {
             // Mark as loading
@@ -452,12 +435,22 @@ export const App: React.FC = () => {
             try {
               tableSchema = await getTableSchema(state.activeConnectionId!, schema, table);
               
+              if (!tableSchema) {
+                // Remove from loading state on error
+                setState(prev => ({ 
+                  ...prev, 
+                  loadingTableSchemas: new Set([...prev.loadingTableSchemas].filter(key => key !== tableKey))
+                }));
+                console.error('Table schema not found');
+                return;
+              }
+              
               // Cache the result and update schemas
               const updatedSchemas = state.schemas.map(s => {
                 if (s.name === schema) {
                   return {
                     ...s,
-                    tables: s.tables.map(t => t.name === table ? tableSchema : t),
+                    tables: s.tables.map(t => t.name === table ? tableSchema! : t),
                   };
                 }
                 return s;
@@ -466,7 +459,7 @@ export const App: React.FC = () => {
               setState(prev => ({ 
                 ...prev, 
                 schemas: updatedSchemas,
-                tableSchemaCache: { ...prev.tableSchemaCache, [tableKey]: tableSchema },
+                tableSchemaCache: { ...prev.tableSchemaCache, [tableKey]: tableSchema! },
                 loadingTableSchemas: new Set([...prev.loadingTableSchemas].filter(key => key !== tableKey))
               }));
             } catch (error) {

@@ -39,12 +39,13 @@ declare global {
   interface Window {
     electronAPI: {
       database: {
-        connect: (config: DatabaseConnection) => Promise<string>;
+        connect: (config: DatabaseConnection) => Promise<{ connectionId: string; error?: string }>;
         disconnect: (connectionId: string) => Promise<void>;
         query: (connectionId: string, sql: string, params: any[], schema?: string) => Promise<QueryResult>;
         getSchemas: (connectionId: string) => Promise<SchemaInfo[]>;
         getTables: (connectionId: string, schema: string) => Promise<TableInfo[]>;
-        getTableSchema: (connectionId: string, schema: string, table: string) => Promise<TableInfo>;
+        getTableSchema: (connectionId: string, schema: string, table: string) => Promise<TableInfo | undefined>;
+        getSchemaTableSchemas: (connectionId: string, schema: string) => Promise<TableInfo[]>;
       };
       keychain: {
         set: (service: string, account: string, password: string) => Promise<void>;

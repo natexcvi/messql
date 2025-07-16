@@ -32,8 +32,12 @@ export const useDatabase = () => {
     return await window.electronAPI.database.getTables(connectionId, schema);
   }, []);
 
-  const getTableSchema = useCallback(async (connectionId: string, schema: string, table: string): Promise<TableInfo> => {
+  const getTableSchema = useCallback(async (connectionId: string, schema: string, table: string): Promise<TableInfo | undefined> => {
     return await window.electronAPI.database.getTableSchema(connectionId, schema, table);
+  }, []);
+
+  const getSchemaTableSchemas = useCallback(async (connectionId: string, schema: string): Promise<TableInfo[]> => {
+    return await window.electronAPI.database.getSchemaTableSchemas(connectionId, schema);
   }, []);
 
   const savePassword = useCallback(async (connectionId: string, password: string): Promise<void> => {
@@ -55,6 +59,7 @@ export const useDatabase = () => {
     getSchemas,
     getTables,
     getTableSchema,
+    getSchemaTableSchemas,
     savePassword,
     getPassword,
     deletePassword,

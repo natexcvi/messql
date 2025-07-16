@@ -54,6 +54,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('db:getTables', connectionId, schema),
     getTableSchema: (connectionId: string, schema: string, table: string) => 
       ipcRenderer.invoke('db:getTableSchema', connectionId, schema, table),
+    getSchemaTableSchemas: (connectionId: string, schema: string) => 
+      ipcRenderer.invoke('db:getSchemaTableSchemas', connectionId, schema),
   },
   keychain: {
     set: (service: string, account: string, password: string) => 
@@ -92,10 +94,11 @@ declare global {
       database: {
         connect: (config: DatabaseConnection) => Promise<{ connectionId: string; error?: string }>;
         disconnect: (connectionId: string) => Promise<void>;
-        query: (connectionId: string, sql: string, params: any[]) => Promise<QueryResult>;
+        query: (connectionId: string, sql: string, params: any[], schema?: string) => Promise<QueryResult>;
         getSchemas: (connectionId: string) => Promise<SchemaInfo[]>;
         getTables: (connectionId: string, schema: string) => Promise<TableInfo[]>;
         getTableSchema: (connectionId: string, schema: string, table: string) => Promise<TableInfo | undefined>;
+        getSchemaTableSchemas: (connectionId: string, schema: string) => Promise<TableInfo[]>;
       };
       keychain: {
         set: (service: string, account: string, password: string) => Promise<void>;
