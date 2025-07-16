@@ -8,7 +8,7 @@ import { EditorView, basicSetup } from "codemirror";
 import { sql, PostgreSQL } from "@codemirror/lang-sql";
 import { completionKeymap, acceptCompletion } from "@codemirror/autocomplete";
 import { keymap } from "@codemirror/view";
-import { Prec } from "@codemirror/state";
+import { Prec, Compartment } from "@codemirror/state";
 import { ayuLight, coolGlow } from "thememirror";
 import { DatabaseConnection, QueryTab, SchemaInfo } from "../types";
 import { QueryResults } from "./QueryResults";
@@ -61,6 +61,7 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
     const viewRef = useRef<EditorView | null>(null);
     const isInitializedRef = useRef(false);
     const currentTabIdRef = useRef<string | null>(null);
+    const sqlConf = useRef(new Compartment());
 
     // Expose focus method to parent components
     useImperativeHandle(ref, () => ({
@@ -103,11 +104,13 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
         doc: tab.query,
         extensions: [
           basicSetup,
-          sql({
-            dialect: PostgreSQL,
-            schema: Object.keys(schema).length > 0 ? schema : undefined,
-            upperCaseKeywords: true,
-          }),
+          sqlConf.current.of(
+            sql({
+              dialect: PostgreSQL,
+              schema: Object.keys(schema).length > 0 ? schema : undefined,
+              upperCaseKeywords: true,
+            }),
+          ),
           isDark ? coolGlow : ayuLight,
           Prec.high(
             keymap.of([
@@ -146,9 +149,25 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
           isInitializedRef.current = false;
         }
       };
-    }, [tab.id, tab.selectedSchema, schemas, isDark]); // Reinitialize when tab, schema, or theme changes
+    }, [tab.id, isDark, onQueryChange, onQueryExecute]); // Reinitialize when tab or theme changes
 
     // Update query content when tab.query changes (e.g., when switching tabs)
+    useEffect(() => {
+      if (!viewRef.current) return;
+
+      const newSchema = convertSchemaForCodeMirror(schemas, tab.selectedSchema);
+
+      viewRef.current.dispatch({
+        effects: sqlConf.current.reconfigure(
+          sql({
+            dialect: PostgreSQL,
+            schema: Object.keys(newSchema).length > 0 ? newSchema : undefined,
+            upperCaseKeywords: true,
+          }),
+        ),
+      });
+    }, [schemas, tab.selectedSchema]);
+
     useEffect(() => {
       if (
         viewRef.current &&
