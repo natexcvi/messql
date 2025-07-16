@@ -22,6 +22,14 @@ A modern PostgreSQL client for macOS built with Electron, React, and TypeScript.
 - **Responsive layout**: Flexible sidebar and main content areas that adapt to window size
 - **Native macOS integration**: Seamless title bar, traffic light controls, and native menu bar
 
+## Quick Install
+
+1. Clone the reposotory
+2. `npm install`
+3. `npm run build`
+4. `npm run dist`
+5. Open the DMG file under `dist/`
+
 ## Development
 
 ### Prerequisites
