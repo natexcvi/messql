@@ -1,4 +1,5 @@
 import { Pool } from 'pg';
+import format from 'pg-format';
 import { DatabaseConnection, QueryResult, SchemaInfo, TableInfo, ColumnInfo } from '../preload';
 
 export class DatabaseService {
@@ -35,26 +36,90 @@ export class DatabaseService {
     }
   }
 
-  async query(connectionId: string, sql: string, params: any[] = []): Promise<QueryResult> {
+  async query(connectionId: string, sql: string, params: any[] = [], schema?: string): Promise<QueryResult> {
     const pool = this.pools.get(connectionId);
     if (!pool) {
       throw new Error('Connection not found');
     }
 
+    const client = await pool.connect();
     const startTime = Date.now();
     try {
-      const result = await pool.query(sql, params);
+      await client.query('BEGIN');
+
+      if (schema) {
+        const sql = format('SET search_path = %L, public', schema);
+        await client.query(sql);
+      }
+
+      const statements = this.splitStatements(sql);
+      let lastResult: any;
+
+      for (const statement of statements) {
+        if (statement.trim()) {
+          lastResult = await client.query(statement, params);
+        }
+      }
+
+      await client.query('COMMIT');
       const duration = Date.now() - startTime;
       
       return {
-        rows: result.rows,
-        fields: result.fields,
-        rowCount: result.rowCount || 0,
+        rows: lastResult.rows,
+        fields: lastResult.fields,
+        rowCount: lastResult.rowCount || 0,
         duration,
       };
     } catch (error) {
+      await client.query('ROLLBACK');
       throw new Error(`Query failed: ${error}`);
+    } finally {
+      client.release();
     }
+  }
+
+  private splitStatements(sql: string): string[] {
+    const statements: string[] = [];
+    let currentStatement = '';
+    let inString = false;
+    let stringChar = '';
+
+    for (let i = 0; i < sql.length; i++) {
+      const char = sql[i];
+      const nextChar = sql[i + 1];
+
+      if (inString) {
+        if (char === stringChar) {
+          if (nextChar === stringChar) {
+            // Escaped string literal
+            currentStatement += char + nextChar;
+            i++;
+          } else {
+            inString = false;
+            currentStatement += char;
+          }
+        } else {
+          currentStatement += char;
+        }
+      } else {
+        if (char === "'" || char === '"') {
+          inString = true;
+          stringChar = char;
+          currentStatement += char;
+        } else if (char === ';') {
+          statements.push(currentStatement);
+          currentStatement = '';
+        } else {
+          currentStatement += char;
+        }
+      }
+    }
+
+    if (currentStatement.trim()) {
+      statements.push(currentStatement);
+    }
+
+    return statements;
   }
 
   async getSchemas(connectionId: string): Promise<SchemaInfo[]> {

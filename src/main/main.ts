@@ -195,8 +195,8 @@ const setupIpcHandlers = (): void => {
     return await databaseService.disconnect(connectionId);
   });
 
-  ipcMain.handle("db:query", async (_, connectionId, sql) => {
-    return await databaseService.query(connectionId, sql);
+  ipcMain.handle("db:query", async (_, connectionId, sql, params, schema) => {
+    return await databaseService.query(connectionId, sql, params, schema);
   });
 
   ipcMain.handle("db:getSchemas", async (_, connectionId) => {

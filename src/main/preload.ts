@@ -46,8 +46,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('db:connect', config),
     disconnect: (connectionId: string) => 
       ipcRenderer.invoke('db:disconnect', connectionId),
-    query: (connectionId: string, sql: string) => 
-      ipcRenderer.invoke('db:query', connectionId, sql),
+    query: (connectionId: string, sql: string, params: any[], schema?: string) =>
+      ipcRenderer.invoke('db:query', connectionId, sql, params, schema),
     getSchemas: (connectionId: string) => 
       ipcRenderer.invoke('db:getSchemas', connectionId),
     getTables: (connectionId: string, schema: string) => 
