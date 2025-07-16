@@ -239,80 +239,74 @@ export const App: React.FC = () => {
     }
   }, [state.activeConnectionId, state.queryTabs, query, updateQueryTab]);
 
-  // Handle schema change for tabs
-  const handleSchemaChange = useCallback(async (tabId: string, schema: string) => {
-    if (!state.activeConnectionId) return;
-    
-    // Update the tab's selected schema
-    updateQueryTab(tabId, { selectedSchema: schema });
-    
-    // Load all table schemas for the selected schema in the background
-    const selectedSchemaInfo = state.schemas.find(s => s.name === schema);
-    if (selectedSchemaInfo && selectedSchemaInfo.tables.length > 0) {
-      // Mark schema as loading
-      setState(prev => ({ 
-        ...prev, 
-        loadingSchemaDetails: new Set([...prev.loadingSchemaDetails, schema])
+  const loadSchemaDetails = useCallback(async (connectionId: string, schemaName: string) => {
+    setState(prev => ({
+      ...prev,
+      loadingSchemaDetails: new Set([...prev.loadingSchemaDetails, schemaName]),
+    }));
+
+    try {
+      const selectedSchemaInfo = state.schemas.find(s => s.name === schemaName);
+      if (!selectedSchemaInfo) return;
+
+      const tableSchemaPromises = selectedSchemaInfo.tables.map(async (table) => {
+        const tableKey = `${schemaName}.${table.name}`;
+        if (state.tableSchemaCache[tableKey]) {
+          return { key: tableKey, schema: state.tableSchemaCache[tableKey] };
+        }
+        try {
+          const tableSchema = await getTableSchema(connectionId, schemaName, table.name);
+          return { key: tableKey, schema: tableSchema };
+        } catch (error) {
+          console.error(`Error loading schema for table ${table.name}:`, error);
+          return null;
+        }
+      });
+
+      const results = await Promise.all(tableSchemaPromises);
+
+      setState(prev => {
+        const newCache = { ...prev.tableSchemaCache };
+        const updatedSchemas = prev.schemas.map(s => {
+          if (s.name !== schemaName) return s;
+
+          const updatedTables = s.tables.map(table => {
+            const result = results.find(r => r && r.key === `${schemaName}.${table.name}`);
+            return result ? result.schema : table;
+          });
+
+          return { ...s, tables: updatedTables };
+        });
+
+        results.forEach(result => {
+          if (result) {
+            newCache[result.key] = result.schema;
+          }
+        });
+
+        return {
+          ...prev,
+          schemas: updatedSchemas,
+          tableSchemaCache: newCache,
+          loadingSchemaDetails: new Set([...prev.loadingSchemaDetails].filter(s => s !== schemaName)),
+        };
+      });
+    } catch (error) {
+      console.error('Error loading schema details:', error);
+      setState(prev => ({
+        ...prev,
+        loadingSchemaDetails: new Set([...prev.loadingSchemaDetails].filter(s => s !== schemaName)),
       }));
-      
-      try {
-        // Load all table schemas for this schema in parallel
-        const tableSchemaPromises = selectedSchemaInfo.tables.map(async (table) => {
-          const tableKey = `${schema}.${table.name}`;
-          
-          // Skip if already cached
-          if (state.tableSchemaCache[tableKey]) {
-            return { key: tableKey, schema: state.tableSchemaCache[tableKey] };
-          }
-          
-          try {
-            const tableSchema = await getTableSchema(state.activeConnectionId!, schema, table.name);
-            return { key: tableKey, schema: tableSchema };
-          } catch (error) {
-            console.error(`Error loading schema for table ${table.name}:`, error);
-            return null;
-          }
-        });
-        
-        const results = await Promise.all(tableSchemaPromises);
-        
-        // Update cache and schema state
-        setState(prev => {
-          const newCache = { ...prev.tableSchemaCache };
-          const updatedSchemas = prev.schemas.map(s => {
-            if (s.name !== schema) return s;
-            
-            const updatedTables = s.tables.map(table => {
-              const result = results.find(r => r && r.key === `${schema}.${table.name}`);
-              return result ? result.schema : table;
-            });
-            
-            return { ...s, tables: updatedTables };
-          });
-          
-          // Update cache
-          results.forEach(result => {
-            if (result) {
-              newCache[result.key] = result.schema;
-            }
-          });
-          
-          return {
-            ...prev,
-            schemas: updatedSchemas,
-            tableSchemaCache: newCache,
-            loadingSchemaDetails: new Set([...prev.loadingSchemaDetails].filter(s => s !== schema))
-          };
-        });
-      } catch (error) {
-        console.error('Error loading schema details:', error);
-        setState(prev => ({ 
-          ...prev, 
-          loadingSchemaDetails: new Set([...prev.loadingSchemaDetails].filter(s => s !== schema))
-        }));
-      }
     }
-  }, [state.activeConnectionId, state.schemas, state.tableSchemaCache, updateQueryTab, getTableSchema]);
+  }, [state.schemas, state.tableSchemaCache, getTableSchema]);
+
+  // Handle schema change for tabs
+  const handleSchemaChange = useCallback((tabId: string, schema: string) => {
+    if (!state.activeConnectionId) return;
+
+    updateQueryTab(tabId, { selectedSchema: schema });
+    loadSchemaDetails(state.activeConnectionId, schema);
+  }, [state.activeConnectionId, updateQueryTab, loadSchemaDetails]);
 
   const saveConnection = useCallback((connection: DatabaseConnection) => {
     const updatedConnections = editingConnection

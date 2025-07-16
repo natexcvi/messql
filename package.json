@@ -80,6 +80,7 @@
     "codemirror": "^6.0.1",
     "keytar": "^7.9.0",
     "pg": "^8.11.0",
+    "pg-format": "^1.0.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "thememirror": "^2.0.1"

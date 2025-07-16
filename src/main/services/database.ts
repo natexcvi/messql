@@ -1,4 +1,5 @@
 import { Pool } from 'pg';
+import format from 'pg-format';
 import { DatabaseConnection, QueryResult, SchemaInfo, TableInfo, ColumnInfo } from '../preload';
 
 export class DatabaseService {
@@ -47,7 +48,8 @@ export class DatabaseService {
       await client.query('BEGIN');
 
       if (schema) {
-        await client.query(`SET search_path = $1, public`, [schema]);
+        const sql = format('SET search_path = %L, public', schema);
+        await client.query(sql);
       }
 
       const statements = this.splitStatements(sql);
