@@ -62,6 +62,13 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
     const isInitializedRef = useRef(false);
     const currentTabIdRef = useRef<string | null>(null);
     const sqlConf = useRef(new Compartment());
+    const onQueryChangeRef = useRef(onQueryChange);
+    const onQueryExecuteRef = useRef(onQueryExecute);
+
+    useEffect(() => {
+      onQueryChangeRef.current = onQueryChange;
+      onQueryExecuteRef.current = onQueryExecute;
+    }, [onQueryChange, onQueryExecute]);
 
     // Expose focus method to parent components
     useImperativeHandle(ref, () => ({
@@ -123,7 +130,7 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
                 key: "Mod-Enter",
                 run: () => {
                   const query = view.state.doc.toString();
-                  onQueryExecute(tab.id, query);
+                  onQueryExecuteRef.current(tab.id, query);
                   return true;
                 },
               },
@@ -132,7 +139,7 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
               const newQuery = update.state.doc.toString();
-              onQueryChange(tab.id, newQuery);
+              onQueryChangeRef.current(tab.id, newQuery);
             }
           }),
         ],
@@ -149,7 +156,7 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
           isInitializedRef.current = false;
         }
       };
-    }, [tab.id, isDark, onQueryChange, onQueryExecute]); // Reinitialize when tab or theme changes
+    }, [tab.id, isDark]); // Reinitialize when tab or theme changes
 
     // Update query content when tab.query changes (e.g., when switching tabs)
     useEffect(() => {
