@@ -63,6 +63,28 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
     const currentTabIdRef = useRef<string | null>(null);
     const sqlCompartmentRef = useRef<Compartment>(new Compartment());
     const themeCompartmentRef = useRef<Compartment>(new Compartment());
+    const keymapCompartmentRef = useRef<Compartment>(new Compartment());
+
+    // Helper function to create the keymap extension
+    const createKeymapExtension = (tabId: string, executeCallback: typeof onQueryExecute) => {
+      return Prec.high(
+        keymap.of([
+          ...completionKeymap,
+          {
+            key: "Tab",
+            run: acceptCompletion,
+          },
+          {
+            key: "Mod-Enter",
+            run: () => {
+              const query = viewRef.current?.state.doc.toString() || "";
+              executeCallback(tabId, query);
+              return true;
+            },
+          },
+        ]),
+      );
+    };
 
     // Expose focus method to parent components
     useImperativeHandle(ref, () => ({
@@ -111,23 +133,7 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
             upperCaseKeywords: true,
           })),
           themeCompartmentRef.current.of(isDark ? coolGlow : ayuLight),
-          Prec.high(
-            keymap.of([
-              ...completionKeymap,
-              {
-                key: "Tab",
-                run: acceptCompletion,
-              },
-              {
-                key: "Mod-Enter",
-                run: () => {
-                  const query = view.state.doc.toString();
-                  onQueryExecute(tab.id, query);
-                  return true;
-                },
-              },
-            ]),
-          ),
+          keymapCompartmentRef.current.of(createKeymapExtension(tab.id, onQueryExecute)),
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
               const newQuery = update.state.doc.toString();
@@ -182,6 +188,16 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
         effects: themeCompartmentRef.current.reconfigure(themeExtension),
       });
     }, [isDark]);
+
+    // Update keymap when onQueryExecute changes
+    useEffect(() => {
+      if (!viewRef.current) return;
+
+      const keymapExtension = createKeymapExtension(tab.id, onQueryExecute);
+      viewRef.current.dispatch({
+        effects: keymapCompartmentRef.current.reconfigure(keymapExtension),
+      });
+    }, [onQueryExecute, tab.id]);
 
     // Update query content when tab.query changes (e.g., when switching tabs)
     useEffect(() => {
