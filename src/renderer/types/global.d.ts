@@ -41,7 +41,8 @@ declare global {
       database: {
         connect: (config: DatabaseConnection) => Promise<{ connectionId: string; error?: string }>;
         disconnect: (connectionId: string) => Promise<void>;
-        query: (connectionId: string, sql: string, params: any[], schema?: string) => Promise<QueryResult>;
+        query: (connectionId: string, sql: string, params: any[], schema?: string, queryId?: string) => Promise<QueryResult>;
+        cancelQuery: (queryId: string) => Promise<void>;
         getSchemas: (connectionId: string) => Promise<SchemaInfo[]>;
         getTables: (connectionId: string, schema: string) => Promise<TableInfo[]>;
         getTableSchema: (connectionId: string, schema: string, table: string) => Promise<TableInfo | undefined>;

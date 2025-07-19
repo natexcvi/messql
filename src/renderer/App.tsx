@@ -49,7 +49,7 @@ export const App: React.FC = () => {
     });
   }, [state.queryTabs.length]);
 
-  const { connect, disconnect, query, getSchemas, getTableSchema, getSchemaTableSchemas } = useDatabase();
+  const { connect, disconnect, query, cancelQuery, getSchemas, getTableSchema, getSchemaTableSchemas } = useDatabase();
 
   const [connectionError, setConnectionError] = useState<string | null>(null);
 
@@ -200,17 +200,19 @@ export const App: React.FC = () => {
   const executeQuery = useCallback(async (tabId: string, sql: string, params: any[] = []) => {
     if (!state.activeConnectionId) return;
 
-    updateQueryTab(tabId, { isExecuting: true, error: undefined });
+    const queryId = `${tabId}-${Date.now()}`;
+    updateQueryTab(tabId, { isExecuting: true, error: undefined, activeQueryId: queryId });
     
     try {
       const tab = state.queryTabs.find(t => t.id === tabId);
       const schema = tab?.selectedSchema;
       
-      const result = await query(state.activeConnectionId, sql, params, schema);
+      const result = await query(state.activeConnectionId, sql, params, schema, queryId);
       updateQueryTab(tabId, { 
         result, 
         isExecuting: false,
         error: undefined,
+        activeQueryId: undefined,
         title: sql.split('\n')[0].substring(0, 30) + '...' || 'Query',
       });
     } catch (error) {
@@ -218,9 +220,26 @@ export const App: React.FC = () => {
         isExecuting: false, 
         result: undefined,
         error: error instanceof Error ? error.message : 'Unknown error',
+        activeQueryId: undefined,
       });
     }
   }, [state.activeConnectionId, state.queryTabs, query, updateQueryTab]);
+
+  const handleCancelQuery = useCallback(async (tabId: string) => {
+    const tab = state.queryTabs.find(t => t.id === tabId);
+    if (tab?.activeQueryId) {
+      try {
+        await cancelQuery(tab.activeQueryId);
+        updateQueryTab(tabId, { 
+          isExecuting: false, 
+          activeQueryId: undefined,
+          error: 'Query cancelled by user',
+        });
+      } catch (error) {
+        console.error('Error cancelling query:', error);
+      }
+    }
+  }, [state.queryTabs, cancelQuery, updateQueryTab]);
 
   const loadSchemaDetails = useCallback(async (connectionId: string, schemaName: string) => {
     setState(prev => ({
@@ -498,6 +517,7 @@ export const App: React.FC = () => {
         onNewTab={addQueryTab}
         onQueryChange={(tabId, query) => updateQueryTab(tabId, { query })}
         onQueryExecute={executeQuery}
+        onQueryCancel={handleCancelQuery}
         onSchemaChange={handleSchemaChange}
         schemas={state.schemas}
       />

@@ -43,6 +43,7 @@ interface QueryEditorProps {
   connection: DatabaseConnection;
   onQueryChange: (tabId: string, query: string) => void;
   onQueryExecute: (tabId: string, query: string) => void;
+  onQueryCancel: (tabId: string) => void;
   onSchemaChange: (tabId: string, schema: string) => void;
   schemas: SchemaInfo[];
 }
@@ -53,7 +54,7 @@ export interface QueryEditorRef {
 
 export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
   (
-    { tab, connection, onQueryChange, onQueryExecute, onSchemaChange, schemas },
+    { tab, connection, onQueryChange, onQueryExecute, onQueryCancel, onSchemaChange, schemas },
     ref,
   ) => {
     const { isDark } = useTheme();
@@ -233,6 +234,16 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
           >
             {tab.isExecuting ? "Executing..." : "Execute (⌘+Enter)"}
           </button>
+          
+          {tab.isExecuting && (
+            <button
+              onClick={() => onQueryCancel(tab.id)}
+              className="secondary"
+              title="Cancel running query"
+            >
+              Cancel
+            </button>
+          )}
 
           <div className="schema-selector">
             <label htmlFor={`schema-select-${tab.id}`}>Schema:</label>

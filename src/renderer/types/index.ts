@@ -44,6 +44,7 @@ export interface QueryTab {
   isExecuting: boolean;
   error?: string;
   selectedSchema?: string; // The schema context for this tab
+  activeQueryId?: string; // ID of the currently running query for cancellation
 }
 
 export interface AppState {

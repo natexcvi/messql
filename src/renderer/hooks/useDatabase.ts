@@ -20,8 +20,12 @@ export const useDatabase = () => {
     await window.electronAPI.database.disconnect(connectionId);
   }, []);
 
-  const query = useCallback(async (connectionId: string, sql: string, params: any[] = [], schema?: string): Promise<QueryResult> => {
-    return await window.electronAPI.database.query(connectionId, sql, params, schema);
+  const query = useCallback(async (connectionId: string, sql: string, params: any[] = [], schema?: string, queryId?: string): Promise<QueryResult> => {
+    return await window.electronAPI.database.query(connectionId, sql, params, schema, queryId);
+  }, []);
+
+  const cancelQuery = useCallback(async (queryId: string): Promise<void> => {
+    return await window.electronAPI.database.cancelQuery(queryId);
   }, []);
 
   const getSchemas = useCallback(async (connectionId: string): Promise<SchemaInfo[]> => {
@@ -56,6 +60,7 @@ export const useDatabase = () => {
     connect,
     disconnect,
     query,
+    cancelQuery,
     getSchemas,
     getTables,
     getTableSchema,

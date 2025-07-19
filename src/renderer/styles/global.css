@@ -303,6 +303,22 @@ body {
     opacity: 0.5;
 }
 
+.toolbar button.secondary {
+    background-color: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    margin-left: 8px;
+}
+
+.toolbar button.secondary:hover {
+    background-color: var(--background-secondary);
+    border-color: var(--accent-primary);
+}
+
+.toolbar button.secondary:active {
+    background-color: var(--background-tertiary);
+}
+
 .toolbar-info {
     margin-left: 12px;
     color: var(--text-tertiary);

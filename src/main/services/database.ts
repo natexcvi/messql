@@ -4,6 +4,7 @@ import { DatabaseConnection, QueryResult, SchemaInfo, TableInfo, ColumnInfo } fr
 
 export class DatabaseService {
   private pools: Map<string, Pool> = new Map();
+  private activeQueries: Map<string, { client: any; queryId: string }> = new Map();
 
   async connect(config: DatabaseConnection, password: string): Promise<{ connectionId: string; error?: string }> {
     const pool = new Pool({
@@ -36,20 +37,25 @@ export class DatabaseService {
     }
   }
 
-  async query(connectionId: string, sql: string, params: any[] = [], schema?: string): Promise<QueryResult> {
+  async query(connectionId: string, sql: string, params: any[] = [], schema?: string, queryId?: string): Promise<QueryResult> {
     const pool = this.pools.get(connectionId);
     if (!pool) {
       throw new Error('Connection not found');
     }
 
     const client = await pool.connect();
+    const actualQueryId = queryId || Date.now().toString();
+    
+    // Track this query for potential cancellation
+    this.activeQueries.set(actualQueryId, { client, queryId: actualQueryId });
+    
     const startTime = Date.now();
     try {
       await client.query('BEGIN');
 
       if (schema) {
-        const sql = format('SET search_path = %L, public', schema);
-        await client.query(sql);
+        const schemaSetSql = format('SET search_path = %L, public', schema);
+        await client.query(schemaSetSql);
       }
 
       const statements = this.splitStatements(sql);
@@ -57,6 +63,10 @@ export class DatabaseService {
 
       for (const statement of statements) {
         if (statement.trim()) {
+          // Check if query was cancelled before executing each statement
+          if (!this.activeQueries.has(actualQueryId)) {
+            throw new Error('Query was cancelled');
+          }
           lastResult = await client.query(statement, params);
         }
       }
@@ -74,6 +84,8 @@ export class DatabaseService {
       await client.query('ROLLBACK');
       throw new Error(`Query failed: ${error}`);
     } finally {
+      // Remove from active queries and release client
+      this.activeQueries.delete(actualQueryId);
       client.release();
     }
   }
@@ -254,5 +266,19 @@ export class DatabaseService {
     });
 
     return Array.from(tableMap.values());
+  }
+
+  async cancelQuery(queryId: string): Promise<void> {
+    const activeQuery = this.activeQueries.get(queryId);
+    if (activeQuery) {
+      try {
+        // Cancel the PostgreSQL query
+        await activeQuery.client.cancel();
+      } catch (error) {
+        console.error('Error cancelling query:', error);
+      }
+      // Remove from active queries regardless of cancel success
+      this.activeQueries.delete(queryId);
+    }
   }
 }
