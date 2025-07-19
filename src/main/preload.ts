@@ -88,6 +88,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.removeAllListeners('theme:changed');
     },
   },
+  file: {
+    saveQuery: (content: string) => ipcRenderer.invoke('file:saveQuery', content),
+    loadQuery: () => ipcRenderer.invoke('file:loadQuery'),
+  },
 });
 
 declare global {
@@ -116,6 +120,10 @@ declare global {
         get: () => Promise<boolean>;
         onChange: (callback: (isDark: boolean) => void) => void;
         removeChangeListener: () => void;
+      };
+      file: {
+        saveQuery: (content: string) => Promise<string | null>;
+        loadQuery: () => Promise<string | null>;
       };
     };
   }

@@ -2,10 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { MainContent } from './components/MainContent';
 import { ConnectionForm } from './components/ConnectionForm';
+import { QueryHistory } from './components/QueryHistory';
 import { useDatabase } from './hooks/useDatabase';
 import { useTheme } from './hooks/useTheme';
-import { storageService } from './services/storage';
-import { DatabaseConnection, QueryTab, AppState, SchemaInfo, TableInfo } from './types';
+import { DatabaseConnection, QueryTab, AppState, SchemaInfo, TableInfo, QueryLogEntry } from './types';
 
 export const App: React.FC = () => {
   const { isDark } = useTheme();
@@ -21,6 +21,8 @@ export const App: React.FC = () => {
     loadingTableSchemas: new Set(),
     tableSchemaCache: {},
     loadingSchemaDetails: new Set(),
+    queryLogs: [],
+    showQueryHistory: false,
   });
 
   const [editingConnection, setEditingConnection] = useState<DatabaseConnection | null>(null);
@@ -30,7 +32,7 @@ export const App: React.FC = () => {
 
   // Load connections on startup
   useEffect(() => {
-    const savedConnections = storageService.loadConnections();
+    const savedConnections = JSON.parse(localStorage.getItem('messql_connections') || '[]');
     setState(prev => ({
       ...prev,
       connections: savedConnections,
@@ -130,7 +132,7 @@ export const App: React.FC = () => {
     }));
 
     // Save to localStorage
-    storageService.saveConnections(updatedConnections);
+    localStorage.setItem('messql_connections', JSON.stringify(updatedConnections));
     
     // Load default schema table schemas in background
     loadDefaultSchemaTableSchemas(connection.id, schemas);
@@ -148,8 +150,8 @@ export const App: React.FC = () => {
     }));
 
     // Save to localStorage and remove from keychain
-    storageService.saveConnections(updatedConnections);
-    storageService.removeConnection(connectionId);
+    localStorage.setItem('messql_connections', JSON.stringify(updatedConnections));
+    // Connection removed from array above
   }, [disconnect, state.connections]);
 
   const addQueryTab = useCallback(() => {
@@ -201,6 +203,9 @@ export const App: React.FC = () => {
     if (!state.activeConnectionId) return;
 
     const queryId = `${tabId}-${Date.now()}`;
+    const startTime = Date.now();
+    const connection = state.connections.find(c => c.id === state.activeConnectionId);
+    
     updateQueryTab(tabId, { isExecuting: true, error: undefined, activeQueryId: queryId });
     
     try {
@@ -208,6 +213,26 @@ export const App: React.FC = () => {
       const schema = tab?.selectedSchema;
       
       const result = await query(state.activeConnectionId, sql, params, schema, queryId);
+      const duration = Date.now() - startTime;
+      
+      // Log successful query
+      const logEntry: QueryLogEntry = {
+        id: queryId,
+        connectionId: state.activeConnectionId,
+        connectionName: connection?.name || 'Unknown',
+        query: sql,
+        schema,
+        timestamp: new Date(),
+        duration,
+        rowCount: result.rowCount,
+        success: true,
+      };
+      
+      setState(prev => ({
+        ...prev,
+        queryLogs: [logEntry, ...prev.queryLogs].slice(0, 1000), // Keep last 1000 queries
+      }));
+      
       updateQueryTab(tabId, { 
         result, 
         isExecuting: false,
@@ -216,14 +241,35 @@ export const App: React.FC = () => {
         title: sql.split('\n')[0].substring(0, 30) + '...' || 'Query',
       });
     } catch (error) {
+      const duration = Date.now() - startTime;
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      // Log failed query
+      const logEntry: QueryLogEntry = {
+        id: queryId,
+        connectionId: state.activeConnectionId,
+        connectionName: connection?.name || 'Unknown',
+        query: sql,
+        schema: state.queryTabs.find(t => t.id === tabId)?.selectedSchema,
+        timestamp: new Date(),
+        duration,
+        error: errorMessage,
+        success: false,
+      };
+      
+      setState(prev => ({
+        ...prev,
+        queryLogs: [logEntry, ...prev.queryLogs].slice(0, 1000), // Keep last 1000 queries
+      }));
+      
       updateQueryTab(tabId, { 
         isExecuting: false, 
         result: undefined,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: errorMessage,
         activeQueryId: undefined,
       });
     }
-  }, [state.activeConnectionId, state.queryTabs, query, updateQueryTab]);
+  }, [state.activeConnectionId, state.connections, state.queryTabs, query, updateQueryTab]);
 
   const handleCancelQuery = useCallback(async (tabId: string) => {
     const tab = state.queryTabs.find(t => t.id === tabId);
@@ -322,7 +368,7 @@ export const App: React.FC = () => {
     }));
     
     setEditingConnection(null);
-    storageService.saveConnections(updatedConnections);
+    localStorage.setItem('messql_connections', JSON.stringify(updatedConnections));
   }, [state.connections, editingConnection]);
 
   const editConnection = useCallback((connection: DatabaseConnection) => {
@@ -382,6 +428,33 @@ export const App: React.FC = () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [addQueryTab, removeQueryTab, state.activeTabId]);
+
+  const toggleQueryHistory = useCallback(() => {
+    setState(prev => ({ ...prev, showQueryHistory: !prev.showQueryHistory }));
+  }, []);
+
+  const handleRerunQuery = useCallback((query: string, schema?: string) => {
+    if (!state.activeConnectionId) {
+      alert('Please connect to a database first');
+      return;
+    }
+
+    // Create a new tab with the query
+    const newTab: QueryTab = {
+      id: Date.now().toString(),
+      title: 'Rerun Query',
+      query: query,
+      isExecuting: false,
+      selectedSchema: schema || 'public',
+    };
+    
+    setState(prev => ({
+      ...prev,
+      queryTabs: [...prev.queryTabs, newTab],
+      activeTabId: newTab.id,
+      showQueryHistory: false,
+    }));
+  }, [state.activeConnectionId]);
 
   const activeConnection = state.connections.find(c => c.id === state.activeConnectionId);
 
@@ -520,7 +593,16 @@ export const App: React.FC = () => {
         onQueryCancel={handleCancelQuery}
         onSchemaChange={handleSchemaChange}
         schemas={state.schemas}
+        onToggleHistory={toggleQueryHistory}
       />
+      
+      {state.showQueryHistory && (
+        <QueryHistory
+          queryLogs={state.queryLogs}
+          onClose={toggleQueryHistory}
+          onRerunQuery={handleRerunQuery}
+        />
+      )}
 
       {state.showConnectionForm && (
         <ConnectionForm

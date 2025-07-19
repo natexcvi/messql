@@ -1,6 +1,7 @@
 import React, {
   useEffect,
   useRef,
+  useState,
   forwardRef,
   useImperativeHandle,
 } from "react";
@@ -13,7 +14,9 @@ import { ayuLight, coolGlow } from "thememirror";
 import { DatabaseConnection, QueryTab, SchemaInfo } from "../types";
 import { QueryResults } from "./QueryResults";
 import { DataTable } from "./DataTable";
+import { VirtualDataTable } from "./VirtualDataTable";
 import { useTheme } from "../hooks/useTheme";
+import { format } from "sql-formatter";
 
 // Convert our schema format to CodeMirror's expected format
 const convertSchemaForCodeMirror = (
@@ -66,6 +69,18 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
     const themeCompartmentRef = useRef<Compartment>(new Compartment());
     const keymapCompartmentRef = useRef<Compartment>(new Compartment());
 
+    // Listen for custom save event triggered by keyboard shortcut
+    useEffect(() => {
+      const handleSaveEvent = () => {
+        if (viewRef.current && viewRef.current.state.doc.toString().trim()) {
+          handleSaveQuery();
+        }
+      };
+      
+      document.addEventListener('triggerSave', handleSaveEvent);
+      return () => document.removeEventListener('triggerSave', handleSaveEvent);
+    }, []);
+
     // Helper function to create the keymap extension
     const createKeymapExtension = (tabId: string, executeCallback: typeof onQueryExecute) => {
       return Prec.high(
@@ -80,6 +95,47 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
             run: () => {
               const query = viewRef.current?.state.doc.toString() || "";
               executeCallback(tabId, query);
+              return true;
+            },
+          },
+          {
+            key: "Mod-Shift-i",
+            run: () => {
+              if (viewRef.current) {
+                const currentQuery = viewRef.current.state.doc.toString();
+                if (!currentQuery.trim()) return false;
+                
+                try {
+                  const formattedQuery = format(currentQuery, {
+                    language: 'postgresql',
+                    keywordCase: 'upper',
+                    identifierCase: 'lower',
+                    linesBetweenQueries: 2,
+                  });
+                  
+                  const transaction = viewRef.current.state.update({
+                    changes: {
+                      from: 0,
+                      to: viewRef.current.state.doc.length,
+                      insert: formattedQuery,
+                    },
+                  });
+                  
+                  viewRef.current.dispatch(transaction);
+                  onQueryChange(tabId, formattedQuery);
+                } catch (error) {
+                  console.error('Error formatting query:', error);
+                }
+              }
+              return true;
+            },
+          },
+          {
+            key: "Mod-s",
+            run: () => {
+              // Trigger save modal
+              const saveEvent = new CustomEvent('triggerSave');
+              document.dispatchEvent(saveEvent);
               return true;
             },
           },
@@ -224,6 +280,70 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
       }
     };
 
+    const handleSaveQuery = async () => {
+      const query = viewRef.current?.state.doc.toString() || tab.query;
+      try {
+        const filePath = await window.electronAPI.file.saveQuery(query);
+        if (filePath) {
+          console.log('Query saved to:', filePath);
+        }
+      } catch (error) {
+        console.error('Error saving query:', error);
+      }
+    };
+
+    const handleLoadQuery = async () => {
+      try {
+        const content = await window.electronAPI.file.loadQuery();
+        if (content && viewRef.current) {
+          const transaction = viewRef.current.state.update({
+            changes: {
+              from: 0,
+              to: viewRef.current.state.doc.length,
+              insert: content,
+            },
+          });
+          viewRef.current.dispatch(transaction);
+          onQueryChange(tab.id, content);
+        }
+      } catch (error) {
+        console.error('Error loading query:', error);
+      }
+    };
+
+    const handleFormatQuery = () => {
+      if (!viewRef.current) return;
+      
+      const currentQuery = viewRef.current.state.doc.toString();
+      if (!currentQuery.trim()) return;
+      
+      try {
+        const formattedQuery = format(currentQuery, {
+          language: 'postgresql',
+          keywordCase: 'upper',
+          identifierCase: 'lower',
+          linesBetweenQueries: 2,
+        });
+        
+        // Update CodeMirror with formatted query
+        const transaction = viewRef.current.state.update({
+          changes: {
+            from: 0,
+            to: viewRef.current.state.doc.length,
+            insert: formattedQuery,
+          },
+        });
+        
+        viewRef.current.dispatch(transaction);
+        
+        // Update tab state
+        onQueryChange(tab.id, formattedQuery);
+      } catch (error) {
+        console.error('Error formatting query:', error);
+        // Could show a toast notification here
+      }
+    };
+
     return (
       <div className="query-editor">
         <div className="toolbar">
@@ -244,6 +364,47 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
               Cancel
             </button>
           )}
+          
+          <button
+            onClick={handleSaveQuery}
+            className="secondary"
+            title="Save query (⌘+S)"
+            disabled={!tab.query.trim()}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '6px' }}>
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+              <polyline points="17 21 17 13 7 13 7 21" />
+              <polyline points="7 3 7 8 15 8" />
+            </svg>
+            Save
+          </button>
+          
+          <button
+            onClick={handleLoadQuery}
+            className="secondary"
+            title="Load query from file"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '6px' }}>
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Load
+          </button>
+          
+          <button
+            onClick={handleFormatQuery}
+            className="secondary"
+            title="Format query (⌘+Shift+I)"
+            disabled={!tab.query.trim() || tab.isExecuting}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '6px' }}>
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+            Format
+          </button>
 
           <div className="schema-selector">
             <label htmlFor={`schema-select-${tab.id}`}>Schema:</label>
@@ -281,7 +442,11 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
           )}
 
           {tab.result ? (
-            <DataTable result={tab.result} />
+            tab.result.rows.length > 1000 ? (
+              <VirtualDataTable result={tab.result} />
+            ) : (
+              <DataTable result={tab.result} />
+            )
           ) : !tab.error ? (
             <QueryResults
               result={tab.result}
@@ -290,6 +455,7 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
             />
           ) : null}
         </div>
+        
       </div>
     );
   },

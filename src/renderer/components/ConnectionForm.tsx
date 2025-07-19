@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { DatabaseConnection } from '../types';
 import { useDatabase } from '../hooks/useDatabase';
+import { LoadingSpinner } from './LoadingSpinner';
 
 interface ConnectionFormProps {
   onConnect: (connection: DatabaseConnection) => Promise<void>;
@@ -205,7 +206,14 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
               className="btn btn-primary"
               disabled={isConnecting}
             >
-              {isConnecting ? 'Connecting...' : 'Connect'}
+              {isConnecting ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <LoadingSpinner size="small" />
+                  Connecting...
+                </div>
+              ) : (
+                'Connect'
+              )}
             </button>
           </div>
         </form>

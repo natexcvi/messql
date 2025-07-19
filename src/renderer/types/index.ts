@@ -47,6 +47,19 @@ export interface QueryTab {
   activeQueryId?: string; // ID of the currently running query for cancellation
 }
 
+export interface QueryLogEntry {
+  id: string;
+  connectionId: string;
+  connectionName: string;
+  query: string;
+  schema?: string;
+  timestamp: Date;
+  duration?: number;
+  rowCount?: number;
+  error?: string;
+  success: boolean;
+}
+
 export interface AppState {
   connections: DatabaseConnection[];
   activeConnectionId: string | null;
@@ -58,4 +71,6 @@ export interface AppState {
   loadingTableSchemas: Set<string>; // Track which tables are currently loading schema
   tableSchemaCache: Record<string, TableInfo>; // Cache for loaded table schemas
   loadingSchemaDetails: Set<string>; // Track which schemas are loading detailed table info
+  queryLogs: QueryLogEntry[]; // Query execution history
+  showQueryHistory: boolean; // Toggle for showing query history panel
 }

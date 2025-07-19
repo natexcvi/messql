@@ -1,4 +1,5 @@
-import { app, BrowserWindow, ipcMain, Menu, nativeTheme } from "electron";
+import { app, BrowserWindow, ipcMain, Menu, nativeTheme, dialog } from "electron";
+import * as fs from "fs";
 import * as path from "path";
 import { DatabaseService } from "./services/database";
 import { KeychainService } from "./services/keychain";
@@ -243,6 +244,51 @@ const setupIpcHandlers = (): void => {
   nativeTheme.on('updated', () => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('theme:changed', nativeTheme.shouldUseDarkColors);
+    }
+  });
+
+  // File operations
+  ipcMain.handle("file:saveQuery", async (_, content: string) => {
+    try {
+      const { filePath } = await dialog.showSaveDialog(mainWindow, {
+        title: 'Save SQL Query',
+        defaultPath: 'query.sql',
+        filters: [
+          { name: 'SQL Files', extensions: ['sql'] },
+          { name: 'All Files', extensions: ['*'] }
+        ]
+      });
+
+      if (filePath) {
+        await fs.promises.writeFile(filePath, content, 'utf8');
+        return filePath;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error saving file:', error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle("file:loadQuery", async () => {
+    try {
+      const { filePaths } = await dialog.showOpenDialog(mainWindow, {
+        title: 'Load SQL Query',
+        filters: [
+          { name: 'SQL Files', extensions: ['sql'] },
+          { name: 'All Files', extensions: ['*'] }
+        ],
+        properties: ['openFile']
+      });
+
+      if (filePaths && filePaths.length > 0) {
+        const content = await fs.promises.readFile(filePaths[0], 'utf8');
+        return content;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error loading file:', error);
+      throw error;
     }
   });
 };

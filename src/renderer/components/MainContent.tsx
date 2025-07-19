@@ -15,6 +15,7 @@ interface MainContentProps {
   onQueryCancel: (tabId: string) => void;
   onSchemaChange: (tabId: string, schema: string) => void;
   schemas: SchemaInfo[];
+  onToggleHistory: () => void;
 }
 
 export const MainContent: React.FC<MainContentProps> = ({
@@ -29,6 +30,7 @@ export const MainContent: React.FC<MainContentProps> = ({
   onQueryCancel,
   onSchemaChange,
   schemas,
+  onToggleHistory,
 }) => {
   const activeTab = queryTabs.find((tab) => tab.id === activeTabId);
   const queryEditorRef = useRef<QueryEditorRef>(null);
@@ -62,10 +64,12 @@ export const MainContent: React.FC<MainContentProps> = ({
         onTabSelect={onTabSelect}
         onTabClose={onTabClose}
         onNewTab={onNewTab}
+        onToggleHistory={onToggleHistory}
       />
 
       {activeTab ? (
         <QueryEditor
+          key={activeTab.id}
           ref={queryEditorRef}
           tab={activeTab}
           connection={activeConnection}

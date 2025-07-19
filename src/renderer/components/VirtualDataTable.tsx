@@ -1,0 +1,292 @@
+import React, { useState, useRef, useCallback, useMemo, CSSProperties, useEffect } from 'react';
+import { VariableSizeGrid as Grid } from 'react-window';
+import { QueryResult } from '../types';
+import { exportToCSV, exportToJSON } from '../utils/export';
+
+interface VirtualDataTableProps {
+  result: QueryResult;
+}
+
+interface ColumnState {
+  width: number;
+  isResizing: boolean;
+}
+
+const HEADER_HEIGHT = 40;
+const ROW_HEIGHT = 35;
+const MIN_COLUMN_WIDTH = 50;
+const DEFAULT_COLUMN_WIDTH = 150;
+
+export const VirtualDataTable: React.FC<VirtualDataTableProps> = ({ result }) => {
+  const { rows = [], fields = [], rowCount = 0, duration = 0 } = result || {};
+  const [columns, setColumns] = useState<Record<string, ColumnState>>(() => {
+    const initial: Record<string, ColumnState> = {};
+    fields.forEach(field => {
+      initial[field.name] = { width: DEFAULT_COLUMN_WIDTH, isResizing: false };
+    });
+    return initial;
+  });
+
+  const gridRef = useRef<Grid>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerDimensions, setContainerDimensions] = useState({ width: 800, height: 600 });
+  
+  const resizeState = useRef<{
+    columnName: string;
+    startX: number;
+    startWidth: number;
+  } | null>(null);
+
+  // Handle container resize
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setContainerDimensions({
+          width: rect.width,
+          height: rect.height - 40, // Subtract header height
+        });
+      }
+    };
+
+    updateDimensions();
+    
+    const resizeObserver = new ResizeObserver(updateDimensions);
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
+
+  // Calculate total width for the grid
+  const totalWidth = useMemo(() => {
+    return fields.reduce((sum, field) => {
+      return sum + (columns[field.name]?.width || DEFAULT_COLUMN_WIDTH);
+    }, 0);
+  }, [fields, columns]);
+
+  // Get column offset for rendering
+  const getColumnOffset = useCallback((index: number) => {
+    let offset = 0;
+    for (let i = 0; i < index; i++) {
+      offset += columns[fields[i].name]?.width || DEFAULT_COLUMN_WIDTH;
+    }
+    return offset;
+  }, [fields, columns]);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent, columnName: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const currentWidth = columns[columnName]?.width || DEFAULT_COLUMN_WIDTH;
+
+    resizeState.current = {
+      columnName,
+      startX: e.clientX,
+      startWidth: currentWidth,
+    };
+
+    setColumns(prev => ({
+      ...prev,
+      [columnName]: { 
+        ...prev[columnName], 
+        width: currentWidth, 
+        isResizing: true 
+      },
+    }));
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }, [columns]);
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!resizeState.current) return;
+
+    const diff = e.clientX - resizeState.current.startX;
+    const newWidth = Math.max(MIN_COLUMN_WIDTH, resizeState.current.startWidth + diff);
+
+    setColumns(prev => ({
+      ...prev,
+      [resizeState.current!.columnName]: {
+        ...prev[resizeState.current!.columnName],
+        width: newWidth,
+        isResizing: true,
+      },
+    }));
+
+    // Clear cache and recompute sizes
+    if (gridRef.current) {
+      gridRef.current.resetAfterColumnIndex(0);
+    }
+  }, []);
+
+  const handleMouseUp = useCallback(() => {
+    if (!resizeState.current) return;
+
+    setColumns(prev => ({
+      ...prev,
+      [resizeState.current!.columnName]: {
+        ...prev[resizeState.current!.columnName],
+        isResizing: false,
+      },
+    }));
+
+    resizeState.current = null;
+    document.removeEventListener('mousemove', handleMouseMove);
+    document.removeEventListener('mouseup', handleMouseUp);
+  }, [handleMouseMove]);
+
+  const handleExportCSV = useCallback(() => {
+    exportToCSV(result);
+  }, [result]);
+
+  const handleExportJSON = useCallback(() => {
+    exportToJSON(result);
+  }, [result]);
+
+  // Cell renderer for both header and data cells
+  const Cell = ({ columnIndex, rowIndex, style }: { columnIndex: number; rowIndex: number; style: CSSProperties }) => {
+    const field = fields[columnIndex];
+    const columnState = columns[field.name] || { width: DEFAULT_COLUMN_WIDTH, isResizing: false };
+
+    // Adjust style to account for our custom positioning
+    const adjustedStyle = {
+      ...style,
+      left: getColumnOffset(columnIndex),
+      width: columnState.width,
+    };
+
+    // Header row
+    if (rowIndex === 0) {
+      return (
+        <div
+          style={{
+            ...adjustedStyle,
+            display: 'flex',
+            alignItems: 'center',
+            backgroundColor: columnState.isResizing ? 'var(--accent-secondary)' : 'var(--bg-secondary)',
+            borderRight: '1px solid var(--border-primary)',
+            borderBottom: '2px solid var(--border-primary)',
+            padding: '0 12px',
+            fontWeight: 600,
+            fontSize: '13px',
+            color: 'var(--text-primary)',
+            position: 'relative',
+          }}
+        >
+          {field.name}
+          {(columnIndex < fields.length - 1 || fields.length === 1) && (
+            <div
+              style={{
+                position: 'absolute',
+                right: -2,
+                top: 0,
+                bottom: 0,
+                width: 4,
+                cursor: 'col-resize',
+                backgroundColor: columnState.isResizing ? '#3b82f6' : 'transparent',
+                zIndex: 11,
+              }}
+              onMouseDown={(e) => handleMouseDown(e, field.name)}
+              onMouseEnter={(e) => {
+                if (!resizeState.current) {
+                  (e.target as HTMLElement).style.backgroundColor = '#3b82f6';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!resizeState.current) {
+                  (e.target as HTMLElement).style.backgroundColor = 'transparent';
+                }
+              }}
+            />
+          )}
+        </div>
+      );
+    }
+
+    // Data rows
+    const row = rows[rowIndex - 1]; // Subtract 1 because row 0 is header
+    const value = row[field.name];
+
+    return (
+      <div
+        style={{
+          ...adjustedStyle,
+          borderRight: '1px solid #f3f4f6',
+          borderBottom: '1px solid #f3f4f6',
+          padding: '6px 12px',
+          fontSize: '12px',
+          color: '#111827',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          display: 'flex',
+          alignItems: 'center',
+        }}
+      >
+        {value === null ? (
+          <span style={{ color: '#9ca3af', fontStyle: 'italic', fontSize: '11px' }}>
+            NULL
+          </span>
+        ) : (
+          String(value)
+        )}
+      </div>
+    );
+  };
+
+  const columnWidth = useCallback((index: number) => {
+    const field = fields[index];
+    return columns[field.name]?.width || DEFAULT_COLUMN_WIDTH;
+  }, [fields, columns]);
+
+  const rowHeight = useCallback((index: number) => {
+    return index === 0 ? HEADER_HEIGHT : ROW_HEIGHT;
+  }, []);
+
+  if (!fields.length || !rows.length) {
+    return (
+      <div className="empty-results">
+        <p>No results to display</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="virtual-data-table" ref={containerRef}>
+      <div className="results-header">
+        <div className="results-info">
+          <span className="row-count">{rowCount.toLocaleString()} rows</span>
+          <span className="duration">{duration}ms</span>
+        </div>
+        <div className="results-actions">
+          <button onClick={handleExportCSV} className="export-btn">
+            Export CSV
+          </button>
+          <button onClick={handleExportJSON} className="export-btn">
+            Export JSON
+          </button>
+        </div>
+      </div>
+
+      <div className="virtual-grid-container" style={{ height: 'calc(100% - 40px)' }}>
+        <Grid
+          ref={gridRef}
+          columnCount={fields.length}
+          columnWidth={columnWidth}
+          height={containerDimensions.height}
+          rowCount={rows.length + 1} // +1 for header
+          rowHeight={rowHeight}
+          width={Math.min(totalWidth, containerDimensions.width)}
+          overscanRowCount={10}
+          overscanColumnCount={2}
+        >
+          {Cell}
+        </Grid>
+      </div>
+    </div>
+  );
+};

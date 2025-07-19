@@ -62,6 +62,10 @@ declare global {
         onChange: (callback: (isDark: boolean) => void) => void;
         removeChangeListener: () => void;
       };
+      file: {
+        saveQuery: (content: string) => Promise<string | null>;
+        loadQuery: () => Promise<string | null>;
+      };
     };
   }
 }

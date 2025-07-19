@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { DatabaseConnection, SchemaInfo } from '../types';
+import { LoadingSpinner } from './LoadingSpinner';
 
 interface SidebarProps {
   connections: DatabaseConnection[];
@@ -122,13 +123,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <div className="connection-name">
                   {connection.name}
                   {connectingConnectionIds.has(connection.id) && (
-                    <span style={{ 
-                      marginLeft: '8px', 
-                      fontSize: '10px', 
-                      color: '#3b82f6' 
-                    }}>
-                      Connecting...
-                    </span>
+                    <div className="connecting-indicator">
+                      <LoadingSpinner size="small" text="Connecting..." />
+                    </div>
                   )}
                 </div>
                 <div className="connection-details">
@@ -228,7 +225,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             color: isLoading ? 'var(--text-quaternary)' : 'var(--text-tertiary)'
                           }}
                         >
-                          📄 {table.name}
+                          {table.name}
                           {isLoading && (
                             <span style={{ 
                               marginLeft: '8px', 
