@@ -38,6 +38,17 @@ export const VirtualDataTable: React.FC<VirtualDataTableProps> = ({ result }) =>
     startWidth: number;
   } | null>(null);
 
+  // Update columns when fields change
+  useEffect(() => {
+    setColumns(prev => {
+      const newColumns: Record<string, ColumnState> = {};
+      fields.forEach(field => {
+        newColumns[field.name] = prev[field.name] || { width: DEFAULT_COLUMN_WIDTH, isResizing: false };
+      });
+      return newColumns;
+    });
+  }, [fields]);
+
   // Handle container resize
   useEffect(() => {
     const updateDimensions = () => {
@@ -96,15 +107,16 @@ export const VirtualDataTable: React.FC<VirtualDataTableProps> = ({ result }) =>
   }, [columns]);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!resizeState.current) return;
+    const currentResize = resizeState.current;
+    if (!currentResize) return;
 
-    const diff = e.clientX - resizeState.current.startX;
-    const newWidth = Math.max(MIN_COLUMN_WIDTH, resizeState.current.startWidth + diff);
+    const diff = e.clientX - currentResize.startX;
+    const newWidth = Math.max(MIN_COLUMN_WIDTH, currentResize.startWidth + diff);
 
     setColumns(prev => ({
       ...prev,
-      [resizeState.current!.columnName]: {
-        ...prev[resizeState.current!.columnName],
+      [currentResize.columnName]: {
+        ...prev[currentResize.columnName],
         width: newWidth,
         isResizing: true,
       },
@@ -117,12 +129,13 @@ export const VirtualDataTable: React.FC<VirtualDataTableProps> = ({ result }) =>
   }, []);
 
   const handleMouseUp = useCallback(() => {
-    if (!resizeState.current) return;
+    const currentResize = resizeState.current;
+    if (!currentResize) return;
 
     setColumns(prev => ({
       ...prev,
-      [resizeState.current!.columnName]: {
-        ...prev[resizeState.current!.columnName],
+      [currentResize.columnName]: {
+        ...prev[currentResize.columnName],
         isResizing: false,
       },
     }));
@@ -157,33 +170,29 @@ export const VirtualDataTable: React.FC<VirtualDataTableProps> = ({ result }) =>
   // Cell renderer for both header and data cells
   const Cell = ({ columnIndex, rowIndex, style }: { columnIndex: number; rowIndex: number; style: CSSProperties }) => {
     const field = fields[columnIndex];
+    if (!field) return null;
     const columnState = columns[field.name] || { width: DEFAULT_COLUMN_WIDTH, isResizing: false };
-
-    // Use the style provided by react-window directly for proper alignment
-    const cellStyle = {
-      ...style,
-      width: columnState.width,
-    };
 
     // Header row
     if (rowIndex === 0) {
       return (
         <div
           style={{
-            ...cellStyle,
+            ...style,
             display: 'flex',
             alignItems: 'center',
             backgroundColor: columnState.isResizing ? 'var(--accent-secondary)' : 'var(--bg-secondary)',
             borderRight: '1px solid var(--border-primary)',
             borderBottom: '2px solid var(--border-primary)',
+            borderTop: '1px solid var(--border-primary)',
             padding: '0 12px',
             fontWeight: 600,
             fontSize: '13px',
             color: 'var(--text-primary)',
-            position: 'relative',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
+            boxSizing: 'border-box',
           }}
         >
           {field.name}
@@ -218,22 +227,25 @@ export const VirtualDataTable: React.FC<VirtualDataTableProps> = ({ result }) =>
 
     // Data rows
     const row = filteredRows[rowIndex - 1]; // Subtract 1 because row 0 is header
+    if (!row) return null;
     const value = row[field.name];
 
     return (
       <div
         style={{
-          ...cellStyle,
-          borderRight: '1px solid #f3f4f6',
-          borderBottom: '1px solid #f3f4f6',
+          ...style,
+          borderRight: '1px solid var(--border-primary)',
+          borderBottom: '1px solid var(--border-primary)',
+          backgroundColor: 'var(--bg-primary)',
           padding: '6px 12px',
           fontSize: '12px',
-          color: '#111827',
+          color: 'var(--text-primary)',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
           display: 'flex',
           alignItems: 'center',
+          boxSizing: 'border-box',
         }}
       >
         {value === null ? (
@@ -303,7 +315,7 @@ export const VirtualDataTable: React.FC<VirtualDataTableProps> = ({ result }) =>
         </div>
       </div>
 
-      <div className="virtual-grid-container" style={{ height: 'calc(100% - 40px)' }}>
+      <div className="virtual-grid-container" style={{ height: 'calc(100% - 40px)', position: 'relative' }}>
         <Grid
           ref={gridRef}
           columnCount={fields.length}
@@ -311,9 +323,10 @@ export const VirtualDataTable: React.FC<VirtualDataTableProps> = ({ result }) =>
           height={containerDimensions.height}
           rowCount={filteredRows.length + 1} // +1 for header
           rowHeight={rowHeight}
-          width={Math.min(totalWidth, containerDimensions.width)}
+          width={containerDimensions.width}
           overscanRowCount={10}
           overscanColumnCount={2}
+          style={{ overflow: 'auto' }}
         >
           {Cell}
         </Grid>

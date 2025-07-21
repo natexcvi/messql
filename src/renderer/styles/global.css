@@ -1336,6 +1336,7 @@ input:focus-visible {
     flex: 1;
     position: relative;
     overflow: hidden;
+    background-color: var(--bg-primary);
 }
 
 .virtual-data-table .results-header {
