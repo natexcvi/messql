@@ -67,18 +67,32 @@ export class DatabaseService {
           if (!this.activeQueries.has(actualQueryId)) {
             throw new Error('Query was cancelled');
           }
-          lastResult = await client.query(statement, params);
+          // Use rowMode: 'array' to get values by position when there are duplicate column names
+          lastResult = await client.query({
+            text: statement,
+            values: params,
+            rowMode: 'array'
+          });
         }
       }
 
       await client.query('COMMIT');
       const duration = Date.now() - startTime;
       
-      // Process fields to handle duplicate column names
-      const processedFields = this.processDuplicateFieldNames(lastResult.fields);
+      // Process fields and convert array rows to objects
+      const processedFields = this.renameDuplicateFields(lastResult.fields);
+      
+      // Convert array-based rows to objects using the processed field names
+      const processedRows = lastResult.rows.map((row: any[]) => {
+        const obj: any = {};
+        processedFields.forEach((field, index) => {
+          obj[field.name] = row[index];
+        });
+        return obj;
+      });
       
       return {
-        rows: lastResult.rows,
+        rows: processedRows,
         fields: processedFields,
         rowCount: lastResult.rowCount || 0,
         duration,
@@ -93,9 +107,10 @@ export class DatabaseService {
     }
   }
 
-  private processDuplicateFieldNames(fields: any[]): any[] {
+  private renameDuplicateFields(fields: any[]): any[] {
     const nameCount = new Map<string, number>();
-    const processedFields = fields.map((field) => {
+    
+    return fields.map((field) => {
       const count = nameCount.get(field.name) || 0;
       nameCount.set(field.name, count + 1);
       
@@ -106,8 +121,6 @@ export class DatabaseService {
       
       return field;
     });
-    
-    return processedFields;
   }
 
   private splitStatements(sql: string): string[] {
