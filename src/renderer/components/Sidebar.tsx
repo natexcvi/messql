@@ -32,6 +32,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedSchemas, setExpandedSchemas] = useState<Set<string>>(new Set());
   const [sidebarWidth, setSidebarWidth] = useState(280);
+  const [connectionsExpanded, setConnectionsExpanded] = useState(true);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const isResizing = useRef(false);
 
@@ -108,8 +109,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {connections.length > 0 && (
         <div className="sidebar-section">
-          <h4>Connections</h4>
-          {connections.map(connection => (
+          <h4 
+            onClick={() => setConnectionsExpanded(!connectionsExpanded)}
+            style={{ cursor: 'pointer', userSelect: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}
+          >
+            <span style={{ fontSize: '12px' }}>{connectionsExpanded ? '▼' : '▶'}</span>
+            Connections
+          </h4>
+          {connectionsExpanded ? connections.map(connection => (
             <div
               key={connection.id}
               className={`connection-item ${activeConnectionId === connection.id ? 'active' : ''}`}
@@ -120,8 +127,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }}
             >
               <div className="connection-info">
-                <div className="connection-name">
-                  {connection.name}
+                <div className="connection-header">
+                  <div className="connection-name">
+                    {connection.name}
+                  </div>
                   {connectingConnectionIds.has(connection.id) && (
                     <div className="connecting-indicator">
                       <LoadingSpinner size="small" text="Connecting..." />
@@ -184,7 +193,37 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </button>
               </div>
             </div>
-          ))}
+          )) : (
+            activeConnectionId && (() => {
+              const activeConnection = connections.find(c => c.id === activeConnectionId);
+              return activeConnection ? (
+                <div
+                  key={activeConnection.id}
+                  className={`connection-item active`}
+                  style={{ 
+                    cursor: 'default',
+                    opacity: 1
+                  }}
+                >
+                  <div className="connection-info">
+                    <div className="connection-header">
+                      <div className="connection-name">
+                        {activeConnection.name}
+                      </div>
+                      {connectingConnectionIds.has(activeConnection.id) && (
+                        <div className="connecting-indicator">
+                          <LoadingSpinner size="small" text="Connecting..." />
+                        </div>
+                      )}
+                    </div>
+                    <div className="connection-details">
+                      {activeConnection.host}:{activeConnection.port}/{activeConnection.database}
+                    </div>
+                  </div>
+                </div>
+              ) : null;
+            })()
+          )}
         </div>
       )}
 
@@ -225,6 +264,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             color: isLoading ? 'var(--text-quaternary)' : 'var(--text-tertiary)'
                           }}
                         >
+                          <svg 
+                            width="14" 
+                            height="14" 
+                            viewBox="0 0 24 24" 
+                            fill="currentColor" 
+                            style={{ marginRight: '6px', verticalAlign: 'middle', opacity: 0.7 }}
+                          >
+                            <path d="M4,3H20A2,2 0 0,1 22,5V20A2,2 0 0,1 20,22H4A2,2 0 0,1 2,20V5A2,2 0 0,1 4,3M4,7V10H8V7H4M10,7V10H14V7H10M20,10V7H16V10H20M4,12V15H8V12H4M4,20H8V17H4V20M10,12V15H14V12H10M10,20H14V17H10V20M20,20V17H16V20H20M20,12H16V15H20V12Z" />
+                          </svg>
                           {table.name}
                           {isLoading && (
                             <span style={{ 

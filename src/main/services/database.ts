@@ -74,9 +74,12 @@ export class DatabaseService {
       await client.query('COMMIT');
       const duration = Date.now() - startTime;
       
+      // Process fields to handle duplicate column names
+      const processedFields = this.processDuplicateFieldNames(lastResult.fields);
+      
       return {
         rows: lastResult.rows,
-        fields: lastResult.fields,
+        fields: processedFields,
         rowCount: lastResult.rowCount || 0,
         duration,
       };
@@ -88,6 +91,23 @@ export class DatabaseService {
       this.activeQueries.delete(actualQueryId);
       client.release();
     }
+  }
+
+  private processDuplicateFieldNames(fields: any[]): any[] {
+    const nameCount = new Map<string, number>();
+    const processedFields = fields.map((field) => {
+      const count = nameCount.get(field.name) || 0;
+      nameCount.set(field.name, count + 1);
+      
+      if (count > 0) {
+        // Append index for duplicate names
+        return { ...field, name: `${field.name}_${count}` };
+      }
+      
+      return field;
+    });
+    
+    return processedFields;
   }
 
   private splitStatements(sql: string): string[] {

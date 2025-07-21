@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { QueryResult } from '../types';
 import { exportToCSV, exportToJSON } from '../utils/export';
 
@@ -20,6 +20,7 @@ export const DataTable: React.FC<DataTableProps> = ({ result }) => {
     });
     return initial;
   });
+  const [filterText, setFilterText] = useState('');
 
   const resizeState = useRef<{
     columnName: string;
@@ -97,6 +98,20 @@ export const DataTable: React.FC<DataTableProps> = ({ result }) => {
     exportToJSON(result, `query_results_${new Date().toISOString().split('T')[0]}.json`);
   }, [result]);
 
+  // Filter rows based on filter text
+  const filteredRows = useMemo(() => {
+    if (!filterText) return rows;
+    
+    const lowerFilter = filterText.toLowerCase();
+    return rows.filter(row => {
+      return fields.some(field => {
+        const value = row[field.name];
+        if (value === null) return false;
+        return String(value).toLowerCase().includes(lowerFilter);
+      });
+    });
+  }, [rows, fields, filterText]);
+
   // Don't render if no fields or result
   if (!result || !fields || fields.length === 0) {
     return (
@@ -113,8 +128,25 @@ export const DataTable: React.FC<DataTableProps> = ({ result }) => {
       <div className="results-header">
         <div className="results-info">
           {rowCount} rows returned in {duration}ms
+          {filterText && ` • ${filteredRows.length} filtered`}
         </div>
-        <div className="export-buttons">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <input
+            type="text"
+            placeholder="Filter results..."
+            value={filterText}
+            onChange={(e) => setFilterText(e.target.value)}
+            className="filter-input"
+            style={{
+              padding: '4px 8px',
+              fontSize: '12px',
+              borderRadius: '4px',
+              border: '1px solid var(--border-primary)',
+              backgroundColor: 'var(--bg-primary)',
+              color: 'var(--text-primary)',
+              minWidth: '150px',
+            }}
+          />
           <button onClick={handleExportCSV} className="export-btn">
             Export CSV
           </button>
@@ -147,6 +179,9 @@ export const DataTable: React.FC<DataTableProps> = ({ result }) => {
                         borderTop: '2px solid var(--border-primary)',
                         margin: 0,
                         padding: '10px 12px',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
                       }}
                     >
                       {field.name}
@@ -181,7 +216,7 @@ export const DataTable: React.FC<DataTableProps> = ({ result }) => {
               </tr>
             </thead>
             <tbody>
-              {rows.map((row, rowIndex) => (
+              {filteredRows.map((row, rowIndex) => (
                 <tr key={rowIndex}>
                   {fields.map((field) => {
                     const columnState = columns[field.name] || { width: 150, isResizing: false };
@@ -204,6 +239,10 @@ export const DataTable: React.FC<DataTableProps> = ({ result }) => {
                         {row[field.name] === null ? (
                           <span style={{ color: '#9ca3af', fontStyle: 'italic', fontSize: '11px' }}>
                             NULL
+                          </span>
+                        ) : typeof row[field.name] === 'object' ? (
+                          <span style={{ fontFamily: 'monospace', fontSize: '11px' }}>
+                            {JSON.stringify(row[field.name])}
                           </span>
                         ) : (
                           String(row[field.name])

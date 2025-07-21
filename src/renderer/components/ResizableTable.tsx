@@ -119,6 +119,10 @@ export const ResizableTable: React.FC<ResizableTableProps> = ({ result }) => {
                   >
                     {row[field.name] === null ? (
                       <span className="null-value">NULL</span>
+                    ) : typeof row[field.name] === 'object' ? (
+                      <span style={{ fontFamily: 'monospace', fontSize: '11px' }}>
+                        {JSON.stringify(row[field.name])}
+                      </span>
                     ) : (
                       String(row[field.name])
                     )}

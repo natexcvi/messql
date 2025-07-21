@@ -6,6 +6,7 @@ import { QueryHistory } from './components/QueryHistory';
 import { useDatabase } from './hooks/useDatabase';
 import { useTheme } from './hooks/useTheme';
 import { DatabaseConnection, QueryTab, AppState, SchemaInfo, TableInfo, QueryLogEntry } from './types';
+import { generateTabName } from './utils/tabNaming';
 
 export const App: React.FC = () => {
   const { isDark } = useTheme();
@@ -238,7 +239,7 @@ export const App: React.FC = () => {
         isExecuting: false,
         error: undefined,
         activeQueryId: undefined,
-        title: sql.split('\n')[0].substring(0, 30) + '...' || 'Query',
+        title: generateTabName(sql),
       });
     } catch (error) {
       const duration = Date.now() - startTime;

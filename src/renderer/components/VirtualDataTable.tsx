@@ -26,6 +26,7 @@ export const VirtualDataTable: React.FC<VirtualDataTableProps> = ({ result }) =>
     });
     return initial;
   });
+  const [filterText, setFilterText] = useState('');
 
   const gridRef = useRef<Grid>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -68,14 +69,6 @@ export const VirtualDataTable: React.FC<VirtualDataTableProps> = ({ result }) =>
     }, 0);
   }, [fields, columns]);
 
-  // Get column offset for rendering
-  const getColumnOffset = useCallback((index: number) => {
-    let offset = 0;
-    for (let i = 0; i < index; i++) {
-      offset += columns[fields[i].name]?.width || DEFAULT_COLUMN_WIDTH;
-    }
-    return offset;
-  }, [fields, columns]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent, columnName: string) => {
     e.preventDefault();
@@ -147,15 +140,28 @@ export const VirtualDataTable: React.FC<VirtualDataTableProps> = ({ result }) =>
     exportToJSON(result);
   }, [result]);
 
+  // Filter rows based on filter text
+  const filteredRows = useMemo(() => {
+    if (!filterText) return rows;
+    
+    const lowerFilter = filterText.toLowerCase();
+    return rows.filter(row => {
+      return fields.some(field => {
+        const value = row[field.name];
+        if (value === null) return false;
+        return String(value).toLowerCase().includes(lowerFilter);
+      });
+    });
+  }, [rows, fields, filterText]);
+
   // Cell renderer for both header and data cells
   const Cell = ({ columnIndex, rowIndex, style }: { columnIndex: number; rowIndex: number; style: CSSProperties }) => {
     const field = fields[columnIndex];
     const columnState = columns[field.name] || { width: DEFAULT_COLUMN_WIDTH, isResizing: false };
 
-    // Adjust style to account for our custom positioning
-    const adjustedStyle = {
+    // Use the style provided by react-window directly for proper alignment
+    const cellStyle = {
       ...style,
-      left: getColumnOffset(columnIndex),
       width: columnState.width,
     };
 
@@ -164,7 +170,7 @@ export const VirtualDataTable: React.FC<VirtualDataTableProps> = ({ result }) =>
       return (
         <div
           style={{
-            ...adjustedStyle,
+            ...cellStyle,
             display: 'flex',
             alignItems: 'center',
             backgroundColor: columnState.isResizing ? 'var(--accent-secondary)' : 'var(--bg-secondary)',
@@ -175,6 +181,9 @@ export const VirtualDataTable: React.FC<VirtualDataTableProps> = ({ result }) =>
             fontSize: '13px',
             color: 'var(--text-primary)',
             position: 'relative',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
           }}
         >
           {field.name}
@@ -208,13 +217,13 @@ export const VirtualDataTable: React.FC<VirtualDataTableProps> = ({ result }) =>
     }
 
     // Data rows
-    const row = rows[rowIndex - 1]; // Subtract 1 because row 0 is header
+    const row = filteredRows[rowIndex - 1]; // Subtract 1 because row 0 is header
     const value = row[field.name];
 
     return (
       <div
         style={{
-          ...adjustedStyle,
+          ...cellStyle,
           borderRight: '1px solid #f3f4f6',
           borderBottom: '1px solid #f3f4f6',
           padding: '6px 12px',
@@ -230,6 +239,10 @@ export const VirtualDataTable: React.FC<VirtualDataTableProps> = ({ result }) =>
         {value === null ? (
           <span style={{ color: '#9ca3af', fontStyle: 'italic', fontSize: '11px' }}>
             NULL
+          </span>
+        ) : typeof value === 'object' ? (
+          <span style={{ fontFamily: 'monospace', fontSize: '11px' }}>
+            {JSON.stringify(value)}
           </span>
         ) : (
           String(value)
@@ -261,8 +274,26 @@ export const VirtualDataTable: React.FC<VirtualDataTableProps> = ({ result }) =>
         <div className="results-info">
           <span className="row-count">{rowCount.toLocaleString()} rows</span>
           <span className="duration">{duration}ms</span>
+          {filterText && <span className="filtered-count">{filteredRows.length} filtered</span>}
         </div>
         <div className="results-actions">
+          <input
+            type="text"
+            placeholder="Filter results..."
+            value={filterText}
+            onChange={(e) => setFilterText(e.target.value)}
+            className="filter-input"
+            style={{
+              padding: '4px 8px',
+              fontSize: '12px',
+              borderRadius: '4px',
+              border: '1px solid var(--border-primary)',
+              backgroundColor: 'var(--bg-primary)',
+              color: 'var(--text-primary)',
+              minWidth: '150px',
+              marginRight: '8px',
+            }}
+          />
           <button onClick={handleExportCSV} className="export-btn">
             Export CSV
           </button>
@@ -278,7 +309,7 @@ export const VirtualDataTable: React.FC<VirtualDataTableProps> = ({ result }) =>
           columnCount={fields.length}
           columnWidth={columnWidth}
           height={containerDimensions.height}
-          rowCount={rows.length + 1} // +1 for header
+          rowCount={filteredRows.length + 1} // +1 for header
           rowHeight={rowHeight}
           width={Math.min(totalWidth, containerDimensions.width)}
           overscanRowCount={10}
