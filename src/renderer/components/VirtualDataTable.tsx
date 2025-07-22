@@ -1,5 +1,5 @@
-import React, { useState, useRef, useCallback, useMemo, CSSProperties, useEffect } from 'react';
-import { VariableSizeGrid as Grid } from 'react-window';
+import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
+import { FixedSizeList as List } from 'react-window';
 import { QueryResult } from '../types';
 import { exportToCSV, exportToJSON } from '../utils/export';
 
@@ -28,9 +28,9 @@ export const VirtualDataTable: React.FC<VirtualDataTableProps> = ({ result }) =>
   });
   const [filterText, setFilterText] = useState('');
 
-  const gridRef = useRef<Grid>(null);
+  const listRef = useRef<List>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [containerDimensions, setContainerDimensions] = useState({ width: 800, height: 600 });
   
   const resizeState = useRef<{
     columnName: string;
@@ -48,38 +48,6 @@ export const VirtualDataTable: React.FC<VirtualDataTableProps> = ({ result }) =>
       return newColumns;
     });
   }, [fields]);
-
-  // Handle container resize
-  useEffect(() => {
-    const updateDimensions = () => {
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        setContainerDimensions({
-          width: rect.width,
-          height: rect.height - 40, // Subtract header height
-        });
-      }
-    };
-
-    updateDimensions();
-    
-    const resizeObserver = new ResizeObserver(updateDimensions);
-    if (containerRef.current) {
-      resizeObserver.observe(containerRef.current);
-    }
-
-    return () => {
-      resizeObserver.disconnect();
-    };
-  }, []);
-
-  // Calculate total width for the grid
-  const totalWidth = useMemo(() => {
-    return fields.reduce((sum, field) => {
-      return sum + (columns[field.name]?.width || DEFAULT_COLUMN_WIDTH);
-    }, 0);
-  }, [fields, columns]);
-
 
   const handleMouseDown = useCallback((e: React.MouseEvent, columnName: string) => {
     e.preventDefault();
@@ -102,48 +70,43 @@ export const VirtualDataTable: React.FC<VirtualDataTableProps> = ({ result }) =>
       },
     }));
 
+    const handleMouseMove = (e: MouseEvent) => {
+      const currentResize = resizeState.current;
+      if (!currentResize) return;
+
+      const diff = e.clientX - currentResize.startX;
+      const newWidth = Math.max(MIN_COLUMN_WIDTH, currentResize.startWidth + diff);
+
+      setColumns(prev => ({
+        ...prev,
+        [currentResize.columnName]: {
+          ...prev[currentResize.columnName],
+          width: newWidth,
+          isResizing: true,
+        },
+      }));
+    };
+
+    const handleMouseUp = () => {
+      const currentResize = resizeState.current;
+      if (!currentResize) return;
+
+      setColumns(prev => ({
+        ...prev,
+        [currentResize.columnName]: {
+          ...prev[currentResize.columnName],
+          isResizing: false,
+        },
+      }));
+
+      resizeState.current = null;
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
   }, [columns]);
-
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    const currentResize = resizeState.current;
-    if (!currentResize) return;
-
-    const diff = e.clientX - currentResize.startX;
-    const newWidth = Math.max(MIN_COLUMN_WIDTH, currentResize.startWidth + diff);
-
-    setColumns(prev => ({
-      ...prev,
-      [currentResize.columnName]: {
-        ...prev[currentResize.columnName],
-        width: newWidth,
-        isResizing: true,
-      },
-    }));
-
-    // Clear cache and recompute sizes
-    if (gridRef.current) {
-      gridRef.current.resetAfterColumnIndex(0);
-    }
-  }, []);
-
-  const handleMouseUp = useCallback(() => {
-    const currentResize = resizeState.current;
-    if (!currentResize) return;
-
-    setColumns(prev => ({
-      ...prev,
-      [currentResize.columnName]: {
-        ...prev[currentResize.columnName],
-        isResizing: false,
-      },
-    }));
-
-    resizeState.current = null;
-    document.removeEventListener('mousemove', handleMouseMove);
-    document.removeEventListener('mouseup', handleMouseUp);
-  }, [handleMouseMove]);
 
   const handleExportCSV = useCallback(() => {
     exportToCSV(result);
@@ -167,110 +130,57 @@ export const VirtualDataTable: React.FC<VirtualDataTableProps> = ({ result }) =>
     });
   }, [rows, fields, filterText]);
 
-  // Cell renderer for both header and data cells
-  const Cell = ({ columnIndex, rowIndex, style }: { columnIndex: number; rowIndex: number; style: CSSProperties }) => {
-    const field = fields[columnIndex];
-    if (!field) return null;
-    const columnState = columns[field.name] || { width: DEFAULT_COLUMN_WIDTH, isResizing: false };
-
-    // Header row
-    if (rowIndex === 0) {
-      return (
-        <div
-          style={{
-            ...style,
-            display: 'flex',
-            alignItems: 'center',
-            backgroundColor: columnState.isResizing ? 'var(--accent-secondary)' : 'var(--bg-secondary)',
-            borderRight: '1px solid var(--border-primary)',
-            borderBottom: '2px solid var(--border-primary)',
-            borderTop: '1px solid var(--border-primary)',
-            padding: '0 12px',
-            fontWeight: 600,
-            fontSize: '13px',
-            color: 'var(--text-primary)',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            boxSizing: 'border-box',
-          }}
-        >
-          {field.name}
-          {(columnIndex < fields.length - 1 || fields.length === 1) && (
-            <div
-              style={{
-                position: 'absolute',
-                right: -2,
-                top: 0,
-                bottom: 0,
-                width: 4,
-                cursor: 'col-resize',
-                backgroundColor: columnState.isResizing ? '#3b82f6' : 'transparent',
-                zIndex: 11,
-              }}
-              onMouseDown={(e) => handleMouseDown(e, field.name)}
-              onMouseEnter={(e) => {
-                if (!resizeState.current) {
-                  (e.target as HTMLElement).style.backgroundColor = '#3b82f6';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!resizeState.current) {
-                  (e.target as HTMLElement).style.backgroundColor = 'transparent';
-                }
-              }}
-            />
-          )}
-        </div>
-      );
-    }
-
-    // Data rows
-    const row = filteredRows[rowIndex - 1]; // Subtract 1 because row 0 is header
+  // Row renderer for virtual list
+  const Row = useCallback(({ index, style }: { index: number; style: React.CSSProperties }) => {
+    const row = filteredRows[index];
     if (!row) return null;
-    const value = row[field.name];
 
     return (
-      <div
-        style={{
-          ...style,
-          borderRight: '1px solid var(--border-primary)',
-          borderBottom: '1px solid var(--border-primary)',
-          backgroundColor: 'var(--bg-primary)',
-          padding: '6px 12px',
-          fontSize: '12px',
-          color: 'var(--text-primary)',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-          display: 'flex',
-          alignItems: 'center',
-          boxSizing: 'border-box',
-        }}
-      >
-        {value === null ? (
-          <span style={{ color: '#9ca3af', fontStyle: 'italic', fontSize: '11px' }}>
-            NULL
-          </span>
-        ) : typeof value === 'object' ? (
-          <span style={{ fontFamily: 'monospace', fontSize: '11px' }}>
-            {JSON.stringify(value)}
-          </span>
-        ) : (
-          String(value)
-        )}
+      <div style={style}>
+        <div style={{ display: 'flex', height: ROW_HEIGHT }}>
+          {fields.map((field, fieldIndex) => {
+            const columnState = columns[field.name] || { width: DEFAULT_COLUMN_WIDTH, isResizing: false };
+            const value = row[field.name];
+            
+            return (
+              <div
+                key={field.name}
+                style={{
+                  width: columnState.width,
+                  minWidth: columnState.width,
+                  maxWidth: columnState.width,
+                  borderRight: fieldIndex < fields.length - 1 ? '1px solid var(--border-primary)' : 'none',
+                  borderBottom: '1px solid var(--border-primary)',
+                  backgroundColor: 'var(--bg-primary)',
+                  padding: '6px 12px',
+                  fontSize: '12px',
+                  color: 'var(--text-primary)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  display: 'flex',
+                  alignItems: 'center',
+                  boxSizing: 'border-box',
+                }}
+              >
+                {value === null ? (
+                  <span style={{ color: '#9ca3af', fontStyle: 'italic', fontSize: '11px' }}>
+                    NULL
+                  </span>
+                ) : typeof value === 'object' ? (
+                  <span style={{ fontFamily: 'monospace', fontSize: '11px' }}>
+                    {JSON.stringify(value)}
+                  </span>
+                ) : (
+                  String(value)
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
     );
-  };
-
-  const columnWidth = useCallback((index: number) => {
-    const field = fields[index];
-    return columns[field.name]?.width || DEFAULT_COLUMN_WIDTH;
-  }, [fields, columns]);
-
-  const rowHeight = useCallback((index: number) => {
-    return index === 0 ? HEADER_HEIGHT : ROW_HEIGHT;
-  }, []);
+  }, [filteredRows, fields, columns]);
 
   if (!fields.length || !rows.length) {
     return (
@@ -279,6 +189,10 @@ export const VirtualDataTable: React.FC<VirtualDataTableProps> = ({ result }) =>
       </div>
     );
   }
+
+  const totalWidth = fields.reduce((sum, field) => {
+    return sum + (columns[field.name]?.width || DEFAULT_COLUMN_WIDTH);
+  }, 0);
 
   return (
     <div className="virtual-data-table" ref={containerRef}>
@@ -315,21 +229,93 @@ export const VirtualDataTable: React.FC<VirtualDataTableProps> = ({ result }) =>
         </div>
       </div>
 
-      <div className="virtual-grid-container" style={{ height: 'calc(100% - 40px)', position: 'relative' }}>
-        <Grid
-          ref={gridRef}
-          columnCount={fields.length}
-          columnWidth={columnWidth}
-          height={containerDimensions.height}
-          rowCount={filteredRows.length + 1} // +1 for header
-          rowHeight={rowHeight}
-          width={containerDimensions.width}
-          overscanRowCount={10}
-          overscanColumnCount={2}
-          style={{ overflow: 'auto' }}
+      <div className="virtual-table-container" style={{ height: 'calc(100% - 40px)', display: 'flex', flexDirection: 'column' }}>
+        {/* Fixed Header */}
+        <div 
+          ref={headerRef}
+          style={{ 
+            height: HEADER_HEIGHT,
+            overflow: 'hidden',
+            flexShrink: 0,
+            borderBottom: '2px solid var(--border-primary)',
+            backgroundColor: 'var(--bg-secondary)',
+          }}
         >
-          {Cell}
-        </Grid>
+          <div style={{ display: 'flex', height: HEADER_HEIGHT, width: totalWidth }}>
+            {fields.map((field, index) => {
+              const columnState = columns[field.name] || { width: DEFAULT_COLUMN_WIDTH, isResizing: false };
+              
+              return (
+                <div
+                  key={field.name}
+                  style={{
+                    width: columnState.width,
+                    minWidth: columnState.width,
+                    maxWidth: columnState.width,
+                    borderRight: index < fields.length - 1 ? '1px solid var(--border-primary)' : 'none',
+                    backgroundColor: columnState.isResizing ? 'var(--accent-secondary)' : 'var(--bg-secondary)',
+                    padding: '0 12px',
+                    fontWeight: 600,
+                    fontSize: '13px',
+                    color: 'var(--text-primary)',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    display: 'flex',
+                    alignItems: 'center',
+                    boxSizing: 'border-box',
+                    position: 'relative',
+                  }}
+                >
+                  {field.name}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      right: -2,
+                      top: 0,
+                      bottom: 0,
+                      width: 4,
+                      cursor: 'col-resize',
+                      backgroundColor: columnState.isResizing ? '#3b82f6' : 'transparent',
+                      zIndex: 10,
+                    }}
+                    onMouseDown={(e) => handleMouseDown(e, field.name)}
+                    onMouseEnter={(e) => {
+                      if (!resizeState.current) {
+                        (e.target as HTMLElement).style.backgroundColor = '#3b82f6';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!resizeState.current) {
+                        (e.target as HTMLElement).style.backgroundColor = 'transparent';
+                      }
+                    }}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Scrollable Body */}
+        <div 
+          style={{ flex: 1, overflow: 'auto' }}
+          onScroll={(e) => {
+            if (headerRef.current) {
+              headerRef.current.scrollLeft = e.currentTarget.scrollLeft;
+            }
+          }}
+        >
+          <List
+            ref={listRef}
+            height={400} // This will be overridden by the parent container
+            itemCount={filteredRows.length}
+            itemSize={ROW_HEIGHT}
+            width={totalWidth}
+          >
+            {Row}
+          </List>
+        </div>
       </div>
     </div>
   );
