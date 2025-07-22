@@ -1,5 +1,4 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
-import { FixedSizeList as List } from 'react-window';
 import { QueryResult } from '../types';
 import { exportToCSV, exportToJSON } from '../utils/export';
 
@@ -28,9 +27,11 @@ export const VirtualDataTable: React.FC<VirtualDataTableProps> = ({ result }) =>
   });
   const [filterText, setFilterText] = useState('');
 
-  const listRef = useRef<List>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [scrollTop, setScrollTop] = useState(0);
+  const [containerHeight, setContainerHeight] = useState(400);
   
   const resizeState = useRef<{
     columnName: string;
@@ -48,6 +49,20 @@ export const VirtualDataTable: React.FC<VirtualDataTableProps> = ({ result }) =>
       return newColumns;
     });
   }, [fields]);
+
+  // Track container height for virtualization
+  useEffect(() => {
+    const updateHeight = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setContainerHeight(rect.height - 80); // Subtract header heights
+      }
+    };
+
+    updateHeight();
+    window.addEventListener('resize', updateHeight);
+    return () => window.removeEventListener('resize', updateHeight);
+  }, []);
 
   const handleMouseDown = useCallback((e: React.MouseEvent, columnName: string) => {
     e.preventDefault();
@@ -130,54 +145,75 @@ export const VirtualDataTable: React.FC<VirtualDataTableProps> = ({ result }) =>
     });
   }, [rows, fields, filterText]);
 
-  // Row renderer for virtual list
-  const Row = useCallback(({ index, style }: { index: number; style: React.CSSProperties }) => {
+  // Calculate visible rows for virtualization
+  const visibleRowsInfo = useMemo(() => {
+    const startIndex = Math.floor(scrollTop / ROW_HEIGHT);
+    const visibleCount = Math.ceil(containerHeight / ROW_HEIGHT) + 2; // +2 for buffer
+    const endIndex = Math.min(startIndex + visibleCount, filteredRows.length);
+    
+    return {
+      startIndex: Math.max(0, startIndex),
+      endIndex,
+      offsetY: startIndex * ROW_HEIGHT,
+    };
+  }, [scrollTop, containerHeight, filteredRows.length]);
+
+  // Row renderer
+  const renderRow = useCallback((index: number) => {
     const row = filteredRows[index];
     if (!row) return null;
 
     return (
-      <div style={style}>
-        <div style={{ display: 'flex', height: ROW_HEIGHT }}>
-          {fields.map((field, fieldIndex) => {
-            const columnState = columns[field.name] || { width: DEFAULT_COLUMN_WIDTH, isResizing: false };
-            const value = row[field.name];
-            
-            return (
-              <div
-                key={field.name}
-                style={{
-                  width: columnState.width,
-                  minWidth: columnState.width,
-                  maxWidth: columnState.width,
-                  borderRight: fieldIndex < fields.length - 1 ? '1px solid var(--border-primary)' : 'none',
-                  borderBottom: '1px solid var(--border-primary)',
-                  backgroundColor: 'var(--bg-primary)',
-                  padding: '6px 12px',
-                  fontSize: '12px',
-                  color: 'var(--text-primary)',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  display: 'flex',
-                  alignItems: 'center',
-                  boxSizing: 'border-box',
-                }}
-              >
-                {value === null ? (
-                  <span style={{ color: '#9ca3af', fontStyle: 'italic', fontSize: '11px' }}>
-                    NULL
-                  </span>
-                ) : typeof value === 'object' ? (
-                  <span style={{ fontFamily: 'monospace', fontSize: '11px' }}>
-                    {JSON.stringify(value)}
-                  </span>
-                ) : (
-                  String(value)
-                )}
-              </div>
-            );
-          })}
-        </div>
+      <div
+        key={index}
+        style={{
+          position: 'absolute',
+          top: index * ROW_HEIGHT,
+          left: 0,
+          height: ROW_HEIGHT,
+          display: 'flex',
+          width: '100%',
+        }}
+      >
+        {fields.map((field, fieldIndex) => {
+          const columnState = columns[field.name] || { width: DEFAULT_COLUMN_WIDTH, isResizing: false };
+          const value = row[field.name];
+          
+          return (
+            <div
+              key={field.name}
+              style={{
+                width: columnState.width,
+                minWidth: columnState.width,
+                maxWidth: columnState.width,
+                borderRight: fieldIndex < fields.length - 1 ? '1px solid var(--border-primary)' : 'none',
+                borderBottom: '1px solid var(--border-primary)',
+                backgroundColor: 'var(--bg-primary)',
+                padding: '6px 12px',
+                fontSize: '12px',
+                color: 'var(--text-primary)',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                display: 'flex',
+                alignItems: 'center',
+                boxSizing: 'border-box',
+              }}
+            >
+              {value === null ? (
+                <span style={{ color: '#9ca3af', fontStyle: 'italic', fontSize: '11px' }}>
+                  NULL
+                </span>
+              ) : typeof value === 'object' ? (
+                <span style={{ fontFamily: 'monospace', fontSize: '11px' }}>
+                  {JSON.stringify(value)}
+                </span>
+              ) : (
+                String(value)
+              )}
+            </div>
+          );
+        })}
       </div>
     );
   }, [filteredRows, fields, columns]);
@@ -299,22 +335,32 @@ export const VirtualDataTable: React.FC<VirtualDataTableProps> = ({ result }) =>
 
         {/* Scrollable Body */}
         <div 
-          style={{ flex: 1, overflow: 'auto' }}
+          ref={bodyRef}
+          style={{ 
+            flex: 1, 
+            overflow: 'auto',
+            position: 'relative',
+          }}
           onScroll={(e) => {
+            const element = e.currentTarget;
             if (headerRef.current) {
-              headerRef.current.scrollLeft = e.currentTarget.scrollLeft;
+              headerRef.current.scrollLeft = element.scrollLeft;
             }
+            setScrollTop(element.scrollTop);
           }}
         >
-          <List
-            ref={listRef}
-            height={400} // This will be overridden by the parent container
-            itemCount={filteredRows.length}
-            itemSize={ROW_HEIGHT}
-            width={totalWidth}
+          <div
+            style={{
+              height: filteredRows.length * ROW_HEIGHT,
+              width: totalWidth,
+              position: 'relative',
+            }}
           >
-            {Row}
-          </List>
+            {Array.from({ length: visibleRowsInfo.endIndex - visibleRowsInfo.startIndex }, (_, i) => {
+              const index = visibleRowsInfo.startIndex + i;
+              return renderRow(index);
+            })}
+          </div>
         </div>
       </div>
     </div>
