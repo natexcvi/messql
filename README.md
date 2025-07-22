@@ -4,7 +4,7 @@
 
 A clean PostgreSQL client for macOS. Fast, simple, and actually pleasant to use.
 
-<img width="1204" height="804" alt="Screenshot 2025-07-14 at 0 35 23" src="https://github.com/user-attachments/assets/030a2641-55f9-425f-b8a3-e4482a0b91f2" />
+<img width="1383" height="912" alt="Screenshot 2025-07-22 at 22 23 00" src="https://github.com/user-attachments/assets/884f6263-fc38-4a7a-9e00-aec9a8ab1b05" />
 
 ## Features
 
