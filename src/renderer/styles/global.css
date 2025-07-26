@@ -915,6 +915,112 @@ body {
     font-size: 13px;
 }
 
+/* Styled textareas for modals */
+.styled-textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-secondary);
+    border-radius: 6px;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 100px;
+    transition: all 0.2s ease;
+    line-height: 1.5;
+}
+
+.styled-textarea:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    background-color: var(--bg-primary);
+}
+
+.styled-textarea:disabled {
+    background-color: var(--bg-tertiary);
+    color: var(--text-quaternary);
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.styled-textarea::placeholder {
+    color: var(--text-quaternary);
+    opacity: 0.8;
+}
+
+/* SQL editor specific styling */
+.styled-textarea.sql-editor {
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    letter-spacing: 0.5px;
+    tab-size: 2;
+}
+
+/* SQL result container animation */
+.sql-result-container {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-top: 0;
+    transform: translateY(-10px);
+}
+
+.sql-result-container.show {
+    max-height: 500px;
+    opacity: 1;
+    margin-top: 16px;
+    transform: translateY(0);
+}
+
+.sql-result-container.generating {
+    animation: pulse-opacity 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-opacity {
+    0% { opacity: 0.5; }
+    50% { opacity: 0.8; }
+    100% { opacity: 0.5; }
+}
+
+/* SQL skeleton loading animation */
+.sql-skeleton {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 6px;
+    padding: 12px;
+    min-height: 200px;
+}
+
+.skeleton-line {
+    height: 16px;
+    background: linear-gradient(90deg, 
+        var(--bg-tertiary) 25%, 
+        var(--bg-primary) 50%, 
+        var(--bg-tertiary) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+    margin-bottom: 12px;
+}
+
+.skeleton-line:last-child {
+    margin-bottom: 0;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
 .error-banner {
     background-color: var(--error-bg);
     border: 1px solid var(--error-border);

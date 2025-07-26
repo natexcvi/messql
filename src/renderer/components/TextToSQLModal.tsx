@@ -158,11 +158,11 @@ export const TextToSQLModal: React.FC<TextToSQLModalProps> = ({
               <label htmlFor="prompt">Describe what you want to query:</label>
               <textarea
                 id="prompt"
+                className="styled-textarea"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="Example: Show me all users who registered in the last 30 days with their order counts"
                 rows={4}
-                style={{ resize: 'vertical', minHeight: '100px' }}
                 disabled={isGenerating}
                 required
               />
@@ -181,25 +181,36 @@ export const TextToSQLModal: React.FC<TextToSQLModalProps> = ({
               </div>
             )}
 
-            {generatedSQL && (
-              <div className="form-group">
-                <label htmlFor="generatedSQL">Generated SQL:</label>
+            <div className={`form-group sql-result-container ${generatedSQL || isGenerating ? 'show' : ''} ${isGenerating ? 'generating' : ''}`}>
+              <label htmlFor="generatedSQL">
+                {isGenerating ? (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <LoadingSpinner size="small" />
+                    Generating SQL...
+                  </span>
+                ) : (
+                  'Generated SQL:'
+                )}
+              </label>
+              {isGenerating ? (
+                <div className="sql-skeleton">
+                  <div className="skeleton-line" style={{ width: '60%' }}></div>
+                  <div className="skeleton-line" style={{ width: '80%' }}></div>
+                  <div className="skeleton-line" style={{ width: '45%' }}></div>
+                  <div className="skeleton-line" style={{ width: '70%' }}></div>
+                  <div className="skeleton-line" style={{ width: '55%' }}></div>
+                </div>
+              ) : (
                 <textarea
                   id="generatedSQL"
+                  className="styled-textarea sql-editor"
                   value={generatedSQL}
                   onChange={(e) => setGeneratedSQL(e.target.value)}
                   rows={8}
-                  style={{ 
-                    resize: 'vertical', 
-                    fontFamily: 'monospace', 
-                    fontSize: '14px',
-                    backgroundColor: 'var(--bg-primary)',
-                    border: '1px solid var(--border-color)'
-                  }}
                   disabled={isGenerating}
                 />
-              </div>
-            )}
+              )}
+            </div>
           </div>
           
           <div className="connection-modal-footer">
