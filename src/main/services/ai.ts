@@ -109,18 +109,80 @@ ${query}`,
     try {
       const model = this.getModel(credentials);
       
-      const schemaContext = schemas.map(schema => {
-        const columns = schema.columns.map(col => 
-          `${col.name} ${col.type}${col.nullable ? '' : ' NOT NULL'}${col.defaultValue ? ` DEFAULT ${col.defaultValue}` : ''}`
-        ).join(', ');
+      // Extract just schema names for initial context
+      const schemaNames = [...new Set(schemas.map(table => {
+        const parts = table.tableName.split('.');
+        return parts.length > 1 ? parts[0] : 'public';
+      }))];
+
+      // Create a map for quick lookup
+      const schemaMap = new Map<string, TableSchema[]>();
+      schemas.forEach(table => {
+        const [schemaName, tableName] = table.tableName.includes('.') 
+          ? table.tableName.split('.')
+          : ['public', table.tableName];
         
-        return `Table: ${schema.tableName}
-Columns: ${columns}${schema.primaryKey ? `
-Primary Key: ${schema.primaryKey.join(', ')}` : ''}${schema.foreignKeys?.length ? `
-Foreign Keys: ${schema.foreignKeys.map(fk => `${fk.column} -> ${fk.referencedTable}.${fk.referencedColumn}`).join(', ')}` : ''}`;
-      }).join('\n\n');
+        if (!schemaMap.has(schemaName)) {
+          schemaMap.set(schemaName, []);
+        }
+        schemaMap.get(schemaName)!.push(table);
+      });
 
       const tools = {
+        listSchemas: tool({
+          description: 'List all available database schemas',
+          parameters: z.object({}),
+          execute: async () => {
+            return { schemas: schemaNames };
+          },
+        }),
+        listTables: tool({
+          description: 'List all tables in a specific schema',
+          parameters: z.object({
+            schema: z.string().describe('The schema name to list tables from'),
+          }),
+          execute: async ({ schema }) => {
+            const tables = schemaMap.get(schema) || [];
+            return {
+              schema,
+              tables: tables.map(t => {
+                const tableName = t.tableName.includes('.') 
+                  ? t.tableName.split('.')[1] 
+                  : t.tableName;
+                return tableName;
+              }),
+            };
+          },
+        }),
+        getTableSchema: tool({
+          description: 'Get detailed schema information for a specific table',
+          parameters: z.object({
+            schema: z.string().describe('The schema name'),
+            table: z.string().describe('The table name'),
+          }),
+          execute: async ({ schema, table }) => {
+            const tableSchema = schemas.find(t => 
+              t.tableName === `${schema}.${table}` || 
+              (schema === 'public' && t.tableName === table)
+            );
+            
+            if (!tableSchema) {
+              return { error: `Table ${schema}.${table} not found` };
+            }
+
+            return {
+              tableName: `${schema}.${table}`,
+              columns: tableSchema.columns.map(col => ({
+                name: col.name,
+                type: col.type,
+                nullable: col.nullable,
+                default: col.defaultValue,
+              })),
+              primaryKey: tableSchema.primaryKey,
+              foreignKeys: tableSchema.foreignKeys,
+            };
+          },
+        }),
         executeQuery: tool({
           description: 'Execute a SQL query against the database',
           parameters: z.object({
@@ -133,15 +195,20 @@ Foreign Keys: ${schema.foreignKeys.map(fk => `${fk.column} -> ${fk.referencedTab
       const result = await generateText({
         model,
         tools,
-        prompt: `You are a PostgreSQL expert. Generate a SQL query based on the user's request using the provided database schema.
+        prompt: `You are a PostgreSQL expert. Generate a SQL query based on the user's request.
 
-Database Schema:
-${schemaContext}
+Available schemas: ${schemaNames.join(', ')}
 
-User Request: ${prompt}
+Instructions:
+1. First, use the listSchemas tool to see available schemas
+2. Use the listTables tool to explore tables in relevant schemas
+3. Use the getTableSchema tool to get column details for tables you need
+4. Generate an accurate SQL query based on the actual schema
+5. Use the executeQuery tool to provide the final query and explanation
 
-Generate a SQL query that fulfills the user's request. Use the executeQuery tool to provide the query and explanation.`,
+User Request: ${prompt}`,
         temperature: 0.1,
+        maxRetries: 3,
       });
 
       // Extract the SQL query from tool calls

@@ -147,7 +147,10 @@ export const TextToSQLModal: React.FC<TextToSQLModalProps> = ({
     <div className="connection-modal-overlay" onClick={onClose}>
       <div className="connection-modal" style={{ maxWidth: '800px', width: '90%' }} onClick={(e) => e.stopPropagation()}>
         <div className="connection-modal-header">
-          <h2>Text to SQL Generator</h2>
+          <h2>
+            <span style={{ fontSize: '20px', marginRight: '8px' }}>🤖</span>
+            AI SQL Generator
+          </h2>
         </div>
         
         <form onSubmit={(e) => { e.preventDefault(); handleGenerateSQL(); }}>
@@ -155,14 +158,30 @@ export const TextToSQLModal: React.FC<TextToSQLModalProps> = ({
             {error && <div className="error-message">{error}</div>}
             
             <div className="form-group">
-              <label htmlFor="prompt">Describe what you want to query:</label>
+              <label htmlFor="prompt">
+                Describe what you want to query:
+                <span style={{ 
+                  fontSize: '12px', 
+                  color: 'var(--text-tertiary)', 
+                  fontWeight: 'normal',
+                  marginLeft: '8px'
+                }}>
+                  (AI will explore your database schema to generate accurate SQL)
+                </span>
+              </label>
               <textarea
                 id="prompt"
                 className="styled-textarea"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Example: Show me all users who registered in the last 30 days with their order counts"
-                rows={4}
+                placeholder="Describe what data you want to query in plain English...
+
+Examples:
+• Show me all users who registered in the last 30 days
+• Find the top 10 customers by total order value
+• List all products that are out of stock
+• Get monthly sales totals for this year"
+                rows={5}
                 disabled={isGenerating}
                 required
               />
@@ -176,8 +195,10 @@ export const TextToSQLModal: React.FC<TextToSQLModalProps> = ({
 
             {schemas.length > 0 && (
               <div className="info-message">
-                <strong>Available schemas:</strong> {schemas.map(s => s.name).join(', ')}<br/>
-                <strong>Total tables:</strong> {schemas.reduce((sum, s) => sum + s.tables.length, 0)}
+                <strong>🎯 AI Ready:</strong> Connected to database with {schemas.length} schema{schemas.length !== 1 ? 's' : ''} and {schemas.reduce((sum, s) => sum + s.tables.length, 0)} tables<br/>
+                <span style={{ fontSize: '12px', opacity: 0.9 }}>
+                  The AI will intelligently explore your database structure to generate optimized queries
+                </span>
               </div>
             )}
 
@@ -232,8 +253,12 @@ export const TextToSQLModal: React.FC<TextToSQLModalProps> = ({
             </button>
             <button 
               type="submit"
-              className="btn btn-secondary" 
+              className="btn btn-primary" 
               disabled={isGenerating || !prompt.trim() || !credentials}
+              style={{
+                minWidth: '140px',
+                fontWeight: 600,
+              }}
             >
               {isGenerating ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -241,7 +266,10 @@ export const TextToSQLModal: React.FC<TextToSQLModalProps> = ({
                   Generating...
                 </div>
               ) : (
-                'Generate SQL'
+                <>
+                  <span style={{ fontSize: '16px', marginRight: '6px' }}>✨</span>
+                  Generate SQL
+                </>
               )}
             </button>
             {generatedSQL && (
