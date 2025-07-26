@@ -3,10 +3,12 @@ import * as fs from "fs";
 import * as path from "path";
 import { DatabaseService } from "./services/database";
 import { KeychainService } from "./services/keychain";
+import { AIService } from "./services/ai";
 
 let mainWindow: BrowserWindow;
 let databaseService: DatabaseService;
 let keychainService: KeychainService;
+let aiService: AIService;
 
 const createWindow = (): void => {
   mainWindow = new BrowserWindow({
@@ -107,6 +109,21 @@ const createMenu = (): void => {
         },
         { type: "separator" },
         {
+          label: "AI Settings",
+          accelerator: "CmdOrCtrl+,",
+          click: () => {
+            mainWindow.webContents.send("ai-settings");
+          },
+        },
+        {
+          label: "Text to SQL",
+          accelerator: "CmdOrCtrl+Shift+T",
+          click: () => {
+            mainWindow.webContents.send("text-to-sql");
+          },
+        },
+        { type: "separator" },
+        {
           label: "Export to CSV",
           accelerator: "CmdOrCtrl+Shift+C",
           click: () => {
@@ -166,6 +183,7 @@ app.whenReady().then(() => {
 
   databaseService = new DatabaseService();
   keychainService = new KeychainService();
+  aiService = new AIService();
 
   setupIpcHandlers();
 
@@ -290,5 +308,31 @@ const setupIpcHandlers = (): void => {
       console.error('Error loading file:', error);
       throw error;
     }
+  });
+
+  // AI service handlers
+  ipcMain.handle("ai:generateTabName", async (_, query: string, credentials) => {
+    return await aiService.generateTabName(query, credentials);
+  });
+
+  ipcMain.handle("ai:generateSQL", async (_, prompt: string, schemas, credentials) => {
+    return await aiService.generateSQL(prompt, schemas, credentials);
+  });
+
+  ipcMain.handle("ai:validateCredentials", async (_, credentials) => {
+    return await aiService.validateCredentials(credentials);
+  });
+
+  // AI credentials handlers
+  ipcMain.handle("ai:setCredentials", async (_, provider: string, credentials: string) => {
+    return await keychainService.setAICredentials(provider, credentials);
+  });
+
+  ipcMain.handle("ai:getCredentials", async (_, provider: string) => {
+    return await keychainService.getAICredentials(provider);
+  });
+
+  ipcMain.handle("ai:deleteCredentials", async (_, provider: string) => {
+    return await keychainService.deleteAICredentials(provider);
   });
 };

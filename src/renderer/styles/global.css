@@ -843,6 +843,7 @@ body {
     color: var(--text-tertiary);
     display: flex;
     align-items: center;
+    overflow: hidden;
 }
 
 .table-item:hover {
@@ -891,6 +892,26 @@ body {
     padding: 12px;
     border-radius: 6px;
     margin: 12px;
+    font-size: 13px;
+}
+
+.info-message {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    font-size: 13px;
+}
+
+.error-message {
+    background-color: var(--error-bg);
+    border: 1px solid var(--error-border);
+    color: var(--error-text);
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 16px;
     font-size: 13px;
 }
 

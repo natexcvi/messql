@@ -92,6 +92,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
     saveQuery: (content: string) => ipcRenderer.invoke('file:saveQuery', content),
     loadQuery: () => ipcRenderer.invoke('file:loadQuery'),
   },
+  ai: {
+    generateTabName: (query: string, credentials: any) => 
+      ipcRenderer.invoke('ai:generateTabName', query, credentials),
+    generateSQL: (prompt: string, schemas: any[], credentials: any) => 
+      ipcRenderer.invoke('ai:generateSQL', prompt, schemas, credentials),
+    validateCredentials: (credentials: any) => 
+      ipcRenderer.invoke('ai:validateCredentials', credentials),
+    setCredentials: (provider: string, credentials: string) => 
+      ipcRenderer.invoke('ai:setCredentials', provider, credentials),
+    getCredentials: (provider: string) => 
+      ipcRenderer.invoke('ai:getCredentials', provider),
+    deleteCredentials: (provider: string) => 
+      ipcRenderer.invoke('ai:deleteCredentials', provider),
+  },
 });
 
 declare global {
@@ -124,6 +138,14 @@ declare global {
       file: {
         saveQuery: (content: string) => Promise<string | null>;
         loadQuery: () => Promise<string | null>;
+      };
+      ai: {
+        generateTabName: (query: string, credentials: any) => Promise<string>;
+        generateSQL: (prompt: string, schemas: any[], credentials: any) => Promise<string>;
+        validateCredentials: (credentials: any) => Promise<boolean>;
+        setCredentials: (provider: string, credentials: string) => Promise<void>;
+        getCredentials: (provider: string) => Promise<string | null>;
+        deleteCredentials: (provider: string) => Promise<void>;
       };
     };
   }

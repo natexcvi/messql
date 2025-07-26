@@ -27,4 +27,17 @@ export class KeychainService {
       throw new Error(`Failed to delete password from keychain: ${error}`);
     }
   }
+
+  // AI credentials methods
+  async setAICredentials(provider: string, credentials: string): Promise<void> {
+    return this.setPassword('ai', provider, credentials);
+  }
+
+  async getAICredentials(provider: string): Promise<string | null> {
+    return this.getPassword('ai', provider);
+  }
+
+  async deleteAICredentials(provider: string): Promise<void> {
+    return this.deletePassword('ai', provider);
+  }
 }

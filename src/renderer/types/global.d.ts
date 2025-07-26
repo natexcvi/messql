@@ -66,6 +66,14 @@ declare global {
         saveQuery: (content: string) => Promise<string | null>;
         loadQuery: () => Promise<string | null>;
       };
+      ai: {
+        generateTabName: (query: string, credentials: any) => Promise<string>;
+        generateSQL: (prompt: string, schemas: any[], credentials: any) => Promise<string>;
+        validateCredentials: (credentials: any) => Promise<boolean>;
+        setCredentials: (provider: string, credentials: string) => Promise<void>;
+        getCredentials: (provider: string) => Promise<string | null>;
+        deleteCredentials: (provider: string) => Promise<void>;
+      };
     };
   }
 }

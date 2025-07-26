@@ -3,10 +3,13 @@ import { Sidebar } from './components/Sidebar';
 import { MainContent } from './components/MainContent';
 import { ConnectionForm } from './components/ConnectionForm';
 import { QueryHistory } from './components/QueryHistory';
+import { AISettingsModal } from './components/AISettingsModal';
+import { TextToSQLModal } from './components/TextToSQLModal';
 import { useDatabase } from './hooks/useDatabase';
 import { useTheme } from './hooks/useTheme';
 import { DatabaseConnection, QueryTab, AppState, SchemaInfo, TableInfo, QueryLogEntry } from './types';
 import { generateTabName } from './utils/tabNaming';
+import { generateSmartTabName, refreshTabName, clearCredentialsCache } from './utils/aiTabNaming';
 
 export const App: React.FC = () => {
   const { isDark } = useTheme();
@@ -27,6 +30,8 @@ export const App: React.FC = () => {
   });
 
   const [editingConnection, setEditingConnection] = useState<DatabaseConnection | null>(null);
+  const [showAISettings, setShowAISettings] = useState(false);
+  const [showTextToSQL, setShowTextToSQL] = useState(false);
 
   const [connectionErrors, setConnectionErrors] = useState<Record<string, string>>({});
   const [connectingConnectionIds, setConnectingConnectionIds] = useState<Set<string>>(new Set());
@@ -239,7 +244,7 @@ export const App: React.FC = () => {
         isExecuting: false,
         error: undefined,
         activeQueryId: undefined,
-        title: generateTabName(sql),
+        title: await generateSmartTabName(sql),
       });
     } catch (error) {
       const duration = Date.now() - startTime;
@@ -357,7 +362,7 @@ export const App: React.FC = () => {
     loadSchemaDetails(state.activeConnectionId, schema);
   }, [state.activeConnectionId, updateQueryTab, loadSchemaDetails]);
 
-  const saveConnection = useCallback((connection: DatabaseConnection) => {
+  const saveConnection = useCallback(async (connection: DatabaseConnection) => {
     const updatedConnections = editingConnection
       ? state.connections.map(c => c.id === connection.id ? connection : c)
       : [...state.connections, connection];
@@ -370,7 +375,29 @@ export const App: React.FC = () => {
     
     setEditingConnection(null);
     localStorage.setItem('messql_connections', JSON.stringify(updatedConnections));
-  }, [state.connections, editingConnection]);
+    
+    // If we're editing the currently active connection, reconnect with new settings
+    if (editingConnection && state.activeConnectionId === connection.id) {
+      try {
+        console.log('Reconnecting to updated active connection:', connection.name);
+        
+        // Disconnect first
+        await disconnect(connection.id);
+        
+        // Wait a moment for clean disconnect
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Reconnect with new settings
+        await connect(connection);
+        
+        console.log('Successfully reconnected to updated connection');
+      } catch (error) {
+        console.error('Failed to reconnect after connection update:', error);
+        // Show error to user
+        alert(`Connection updated but failed to reconnect: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+  }, [state.connections, state.activeConnectionId, editingConnection, disconnect, connect]);
 
   const editConnection = useCallback((connection: DatabaseConnection) => {
     setEditingConnection(connection);
@@ -381,6 +408,14 @@ export const App: React.FC = () => {
     const handleNewConnection = () => {
       setEditingConnection(null);
       setState(prev => ({ ...prev, showConnectionForm: true }));
+    };
+    
+    const handleAISettings = () => {
+      setShowAISettings(true);
+    };
+    
+    const handleTextToSQL = () => {
+      setShowTextToSQL(true);
     };
 
     const handleNewQuery = () => {
@@ -413,6 +448,8 @@ export const App: React.FC = () => {
     };
 
     window.electronAPI.on('new-connection', handleNewConnection);
+    window.electronAPI.on('ai-settings', handleAISettings);
+    window.electronAPI.on('text-to-sql', handleTextToSQL);
     window.electronAPI.on('new-query', handleNewQuery);
     window.electronAPI.on('close-tab', handleCloseTab);
     window.electronAPI.on('export-csv', handleExportCSV);
@@ -422,6 +459,8 @@ export const App: React.FC = () => {
 
     return () => {
       window.electronAPI.removeAllListeners('new-connection');
+      window.electronAPI.removeAllListeners('ai-settings');
+      window.electronAPI.removeAllListeners('text-to-sql');
       window.electronAPI.removeAllListeners('new-query');
       window.electronAPI.removeAllListeners('close-tab');
       window.electronAPI.removeAllListeners('export-csv');
@@ -434,7 +473,7 @@ export const App: React.FC = () => {
     setState(prev => ({ ...prev, showQueryHistory: !prev.showQueryHistory }));
   }, []);
 
-  const handleRerunQuery = useCallback((query: string, schema?: string) => {
+  const handleRerunQuery = useCallback(async (query: string, schema?: string) => {
     if (!state.activeConnectionId) {
       alert('Please connect to a database first');
       return;
@@ -443,7 +482,7 @@ export const App: React.FC = () => {
     // Create a new tab with the query
     const newTab: QueryTab = {
       id: Date.now().toString(),
-      title: 'Rerun Query',
+      title: await generateSmartTabName(query, { isRerun: true }),
       query: query,
       isExecuting: false,
       selectedSchema: schema || 'public',
@@ -569,7 +608,11 @@ export const App: React.FC = () => {
           const sql = `SELECT * FROM "${schema}"."${table}" LIMIT 100;`;
           const newTab: QueryTab = {
             id: Date.now().toString(),
-            title: `"${schema}"."${table}"`,
+            title: await generateSmartTabName(sql, { 
+              isTableSelect: true, 
+              schema, 
+              table 
+            }),
             query: sql,
             isExecuting: false,
             selectedSchema: schema,
@@ -616,6 +659,59 @@ export const App: React.FC = () => {
           isConnecting={state.isConnecting}
           error={connectionError}
           editConnection={editingConnection || undefined}
+        />
+      )}
+
+      {showAISettings && (
+        <AISettingsModal
+          isOpen={showAISettings}
+          onClose={() => setShowAISettings(false)}
+          onSave={(credentials) => {
+            console.log('AI credentials saved:', credentials);
+            clearCredentialsCache(); // Clear cache so new credentials are used
+            setShowAISettings(false);
+          }}
+        />
+      )}
+
+      {showTextToSQL && (
+        <TextToSQLModal
+          isOpen={showTextToSQL}
+          onClose={() => setShowTextToSQL(false)}
+          onGenerateSQL={(sql) => {
+            // Create a new tab with the generated SQL immediately with a temporary name
+            const newTabId = Date.now().toString();
+            const newTab: QueryTab = {
+              id: newTabId,
+              title: 'Generated SQL', // Temporary name
+              query: sql,
+              isExecuting: false,
+              selectedSchema: state.queryTabs.find(tab => tab.id === state.activeTabId)?.selectedSchema || (state.schemas[0]?.name || 'public'),
+            };
+            
+            setState(prev => ({
+              ...prev,
+              queryTabs: [...prev.queryTabs, newTab],
+              activeTabId: newTab.id,
+            }));
+            
+            // Close modal immediately for responsive UX
+            setShowTextToSQL(false);
+            
+            // Generate smart tab name in background
+            generateSmartTabName(sql).then(smartTitle => {
+              setState(prev => ({
+                ...prev,
+                queryTabs: prev.queryTabs.map(tab => 
+                  tab.id === newTabId ? { ...tab, title: smartTitle } : tab
+                )
+              }));
+            }).catch(() => {
+              // If AI naming fails, keep the temporary name
+              console.log('AI tab naming failed, keeping temporary name');
+            });
+          }}
+          schemas={state.schemas}
         />
       )}
     </div>
