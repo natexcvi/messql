@@ -118,10 +118,21 @@ export const TextToSQLModal: React.FC<TextToSQLModalProps> = ({
     setGeneratedSQL('');
 
     try {
+      console.log('Starting SQL generation...');
       const tableSchemas = convertSchemasToTableSchemas();
+      console.log('Table schemas prepared:', tableSchemas.length);
+      
       const sql = await window.electronAPI.ai.generateSQL(prompt, tableSchemas, credentials);
-      setGeneratedSQL(sql);
+      console.log('Generated SQL:', sql);
+      
+      if (!sql || sql.trim() === '') {
+        console.error('Received empty SQL response');
+        setError('No SQL was generated. Please try rephrasing your request.');
+      } else {
+        setGeneratedSQL(sql);
+      }
     } catch (error: any) {
+      console.error('SQL generation error:', error);
       setError(error.message || 'Failed to generate SQL');
     } finally {
       setIsGenerating(false);
