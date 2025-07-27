@@ -33,13 +33,15 @@ interface TextToSQLModalProps {
   onClose: () => void;
   onGenerateSQL: (sql: string) => void;
   schemas: Array<{ name: string; tables: Array<{ name: string; columns: any[] }> }>;
+  activeConnectionId?: string;
 }
 
 export const TextToSQLModal: React.FC<TextToSQLModalProps> = ({
   isOpen,
   onClose,
   onGenerateSQL,
-  schemas
+  schemas,
+  activeConnectionId
 }) => {
   const [prompt, setPrompt] = useState('');
   const [generatedSQL, setGeneratedSQL] = useState('');
@@ -122,7 +124,7 @@ export const TextToSQLModal: React.FC<TextToSQLModalProps> = ({
       const tableSchemas = convertSchemasToTableSchemas();
       console.log('Table schemas prepared:', tableSchemas.length);
       
-      const sql = await window.electronAPI.ai.generateSQL(prompt, tableSchemas, credentials);
+      const sql = await window.electronAPI.ai.generateSQL(prompt, tableSchemas, credentials, activeConnectionId);
       console.log('Generated SQL:', sql);
       
       if (!sql || sql.trim() === '') {

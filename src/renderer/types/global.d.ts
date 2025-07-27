@@ -68,7 +68,7 @@ declare global {
       };
       ai: {
         generateTabName: (query: string, credentials: any) => Promise<string>;
-        generateSQL: (prompt: string, schemas: any[], credentials: any) => Promise<string>;
+        generateSQL: (prompt: string, schemas: any[], credentials: any, connectionId?: string) => Promise<string>;
         validateCredentials: (credentials: any) => Promise<boolean>;
         setCredentials: (provider: string, credentials: string) => Promise<void>;
         getCredentials: (provider: string) => Promise<string | null>;

@@ -712,6 +712,7 @@ export const App: React.FC = () => {
             });
           }}
           schemas={state.schemas}
+          activeConnectionId={state.activeConnectionId || undefined}
         />
       )}
     </div>

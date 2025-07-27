@@ -95,8 +95,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   ai: {
     generateTabName: (query: string, credentials: any) => 
       ipcRenderer.invoke('ai:generateTabName', query, credentials),
-    generateSQL: (prompt: string, schemas: any[], credentials: any) => 
-      ipcRenderer.invoke('ai:generateSQL', prompt, schemas, credentials),
+    generateSQL: (prompt: string, schemas: any[], credentials: any, connectionId?: string) => 
+      ipcRenderer.invoke('ai:generateSQL', prompt, schemas, credentials, connectionId),
     validateCredentials: (credentials: any) => 
       ipcRenderer.invoke('ai:validateCredentials', credentials),
     setCredentials: (provider: string, credentials: string) => 
@@ -141,7 +141,7 @@ declare global {
       };
       ai: {
         generateTabName: (query: string, credentials: any) => Promise<string>;
-        generateSQL: (prompt: string, schemas: any[], credentials: any) => Promise<string>;
+        generateSQL: (prompt: string, schemas: any[], credentials: any, connectionId?: string) => Promise<string>;
         validateCredentials: (credentials: any) => Promise<boolean>;
         setCredentials: (provider: string, credentials: string) => Promise<void>;
         getCredentials: (provider: string) => Promise<string | null>;

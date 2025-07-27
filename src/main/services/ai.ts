@@ -1,4 +1,4 @@
-import { generateObject, generateText, tool } from "ai";
+import { generateText, tool } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createAmazonBedrock } from "@ai-sdk/amazon-bedrock";
@@ -31,6 +31,15 @@ export interface TableSchema {
     referencedTable: string;
     referencedColumn: string;
   }>;
+}
+
+export interface DatabaseFunctions {
+  getSchemas: (connectionId: string) => Promise<any[]>;
+  getTableSchema: (
+    connectionId: string,
+    schema: string,
+    table: string,
+  ) => Promise<any>;
 }
 
 export class AIService {
@@ -110,6 +119,8 @@ ${query}`,
     prompt: string,
     schemas: TableSchema[],
     credentials: AICredentials,
+    connectionId?: string,
+    dbFunctions?: DatabaseFunctions,
   ): Promise<string> {
     try {
       console.log("Starting SQL generation with prompt:", prompt);
@@ -130,9 +141,9 @@ ${query}`,
       // Create a map for quick lookup
       const schemaMap = new Map<string, TableSchema[]>();
       schemas.forEach((table) => {
-        const [schemaName, tableName] = table.tableName.includes(".")
+        const [schemaName] = table.tableName.includes(".")
           ? table.tableName.split(".")
-          : ["public", table.tableName];
+          : ["public"];
 
         if (!schemaMap.has(schemaName)) {
           schemaMap.set(schemaName, []);
@@ -156,7 +167,68 @@ ${query}`,
           }),
           execute: async ({ schema }) => {
             console.log("Tool: listTables called for schema:", schema);
-            const tables = schemaMap.get(schema) || [];
+            let tables = schemaMap.get(schema) || [];
+
+            // If no tables found and we have an active connection, try to load schema
+            if (tables.length === 0 && connectionId && dbFunctions) {
+              console.log(
+                "No tables found in cache, attempting to load schema:",
+                schema,
+              );
+              try {
+                // Get basic schema info first
+                const freshSchemas = await dbFunctions.getSchemas(connectionId);
+                const targetSchema = freshSchemas.find(
+                  (s: any) => s.name === schema,
+                );
+
+                if (targetSchema && targetSchema.tables.length > 0) {
+                  // Update our local schema map with fresh data
+                  const freshTableSchemas: TableSchema[] =
+                    targetSchema.tables.map((table: any) => ({
+                      tableName: `${schema}.${table.name}`,
+                      columns: table.columns || [],
+                      primaryKey: [],
+                      foreignKeys: [],
+                    }));
+
+                  schemaMap.set(schema, freshTableSchemas);
+                  tables = freshTableSchemas;
+
+                  console.log(
+                    "Successfully loaded schema on demand:",
+                    schema,
+                    "tables:",
+                    tables.length,
+                  );
+                } else {
+                  console.warn("Schema exists but has no tables:", schema);
+                  return {
+                    schema,
+                    tables: [],
+                    note: `Schema '${schema}' exists but contains no tables.`,
+                  };
+                }
+              } catch (error) {
+                console.error("Failed to load schema on demand:", error);
+                return {
+                  schema,
+                  tables: [],
+                  error:
+                    "Failed to load schema information. Please check your database connection.",
+                };
+              }
+            } else if (tables.length === 0) {
+              console.warn(
+                "No connection ID or database functions provided for lazy schema loading",
+              );
+              return {
+                schema,
+                tables: [],
+                note: "Schema not loaded yet. Please ensure database connection is established.",
+              };
+            }
+
             const tableNames = tables.map((t) => {
               const tableName = t.tableName.includes(".")
                 ? t.tableName.split(".")[1]
@@ -181,11 +253,63 @@ ${query}`,
               "Tool: getTableSchema called for:",
               `${schema}.${table}`,
             );
-            const tableSchema = schemas.find(
+            let tableSchema = schemas.find(
               (t) =>
                 t.tableName === `${schema}.${table}` ||
                 (schema === "public" && t.tableName === table),
             );
+
+            // If not found in provided schemas and we have connection, try to load it
+            if (!tableSchema?.columns.length && connectionId && dbFunctions) {
+              console.log(
+                "Table schema not found in cache, attempting to load:",
+                `${schema}.${table}`,
+              );
+              try {
+                // Get detailed table schema
+                const freshTableSchema = await dbFunctions.getTableSchema(
+                  connectionId,
+                  schema,
+                  table,
+                );
+
+                if (freshTableSchema) {
+                  // Convert to our TableSchema format
+                  tableSchema = {
+                    tableName: `${schema}.${table}`,
+                    columns: freshTableSchema.columns || [],
+                    primaryKey: freshTableSchema.columns
+                      .filter((col: any) => col.isPrimaryKey)
+                      .map((col: any) => col.name),
+                    foreignKeys: freshTableSchema.columns
+                      .filter((col: any) => col.foreignKey)
+                      .map((col: any) => ({
+                        column: col.name,
+                        referencedTable: col.foreignKey.table,
+                        referencedColumn: col.foreignKey.column,
+                      })),
+                  };
+
+                  console.log(
+                    "Successfully loaded table schema on demand:",
+                    `${schema}.${table}`,
+                  );
+                } else {
+                  console.log(
+                    "Table not found in database:",
+                    `${schema}.${table}`,
+                  );
+                  return {
+                    error: `Table ${schema}.${table} not found in database`,
+                  };
+                }
+              } catch (error) {
+                console.error("Failed to load table schema on demand:", error);
+                return {
+                  error: `Failed to load schema for table ${schema}.${table}`,
+                };
+              }
+            }
 
             if (!tableSchema) {
               console.log("Table not found:", `${schema}.${table}`);
@@ -272,39 +396,16 @@ User Request: ${prompt}`,
         }
       }
 
-      // Fallback: try to extract SQL from the text response
-      console.log("No executeQuery tool call found, trying text extraction...");
-
-      // Try multiple SQL extraction patterns
-      const patterns = [
-        /```sql\n([\s\S]*?)\n```/i,
-        /```\n(SELECT[\s\S]*?);?\n```/i,
-        /```\n(INSERT[\s\S]*?);?\n```/i,
-        /```\n(UPDATE[\s\S]*?);?\n```/i,
-        /```\n(DELETE[\s\S]*?);?\n```/i,
-        /```\n(WITH[\s\S]*?);?\n```/i,
-        /(SELECT[\s\S]*?);?\s*$/i,
-        /(INSERT[\s\S]*?);?\s*$/i,
-        /(UPDATE[\s\S]*?);?\s*$/i,
-        /(DELETE[\s\S]*?);?\s*$/i,
-        /(WITH[\s\S]*?);?\s*$/i,
-      ];
-
-      for (const pattern of patterns) {
-        const match = result.text.match(pattern);
-        if (match && match[1]) {
-          const sql = match[1].trim().replace(/;$/, "");
-          if (sql.length > 10) {
-            // Basic sanity check
-            console.log(
-              "Found SQL with pattern:",
-              pattern.toString(),
-              "SQL:",
-              sql,
-            );
-            return sql;
-          }
+      // Try JSON parsing as fallback
+      console.log("Trying JSON parsing fallback...");
+      try {
+        const jsonResponse = JSON.parse(result.text);
+        if (jsonResponse.query && typeof jsonResponse.query === "string") {
+          console.log("Found SQL in JSON response:", jsonResponse.query);
+          return jsonResponse.query;
         }
+      } catch (parseError) {
+        console.log("JSON parsing failed:", parseError);
       }
 
       // If no SQL found, return an error message instead of the explanation text

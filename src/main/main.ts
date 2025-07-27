@@ -315,8 +315,13 @@ const setupIpcHandlers = (): void => {
     return await aiService.generateTabName(query, credentials);
   });
 
-  ipcMain.handle("ai:generateSQL", async (_, prompt: string, schemas, credentials) => {
-    return await aiService.generateSQL(prompt, schemas, credentials);
+  ipcMain.handle("ai:generateSQL", async (_, prompt: string, schemas, credentials, connectionId?: string) => {
+    const dbFunctions = connectionId ? {
+      getSchemas: (id: string) => databaseService.getSchemas(id),
+      getTableSchema: (id: string, schema: string, table: string) => databaseService.getTableSchema(id, schema, table),
+    } : undefined;
+    
+    return await aiService.generateSQL(prompt, schemas, credentials, connectionId, dbFunctions);
   });
 
   ipcMain.handle("ai:validateCredentials", async (_, credentials) => {

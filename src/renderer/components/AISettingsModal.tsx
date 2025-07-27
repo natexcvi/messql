@@ -433,6 +433,10 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
                 ))}
               </select>
             </div>
+
+            <div className="info-message">
+              <strong>Note:</strong> When saving, credentials will be validated by generating a single token using the selected model to ensure they work correctly.
+            </div>
           </div>
 
           <div className="connection-modal-footer">
