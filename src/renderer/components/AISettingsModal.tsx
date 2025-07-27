@@ -417,21 +417,33 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
             {renderProviderFields()}
 
             <div className="form-group">
-              <label htmlFor="model">Model</label>
-              <select
+              <label htmlFor="model">
+                Model
+                <span style={{ 
+                  fontSize: '12px', 
+                  color: 'var(--text-tertiary)', 
+                  fontWeight: 'normal',
+                  marginLeft: '8px'
+                }}>
+                  (or enter custom model name)
+                </span>
+              </label>
+              <input
+                type="text"
                 id="model"
+                list="model-suggestions"
                 value={credentials.model || ""}
                 onChange={(e) =>
                   setCredentials((prev) => ({ ...prev, model: e.target.value }))
                 }
+                placeholder="Enter model name or select from suggestions..."
                 disabled={isLoading || isValidating}
-              >
+              />
+              <datalist id="model-suggestions">
                 {defaultModels[credentials.provider].map((model) => (
-                  <option key={model} value={model}>
-                    {model}
-                  </option>
+                  <option key={model} value={model} />
                 ))}
-              </select>
+              </datalist>
             </div>
 
             <div className="info-message">
