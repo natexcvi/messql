@@ -345,6 +345,7 @@ body {
 
 .schema-selector select {
     padding: 4px 8px;
+    padding-right: 24px;
     border: 1px solid var(--border-secondary);
     border-radius: 4px;
     font-size: 12px;
@@ -352,6 +353,18 @@ body {
     color: var(--text-primary);
     cursor: pointer;
     transition: all 0.15s ease;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 4px center;
+    background-repeat: no-repeat;
+    background-size: 12px;
+}
+
+/* Dark theme for schema selector */
+body.dark .schema-selector select {
+    background-image: url("data:image/svg+xml;charset=utf-8,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
 }
 
 .schema-selector select:hover {
@@ -577,6 +590,23 @@ body {
     background-color: var(--bg-primary);
     color: var(--text-primary);
     transition: all 0.15s ease;
+}
+
+.form-group select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 8px center;
+    background-repeat: no-repeat;
+    background-size: 16px;
+    padding-right: 32px;
+    cursor: pointer;
+}
+
+/* Dark theme dropdown arrow */
+body.dark .form-group select {
+    background-image: url("data:image/svg+xml;charset=utf-8,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
 }
 
 .form-group input:focus,

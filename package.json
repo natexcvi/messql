@@ -92,6 +92,7 @@
     "pg-format": "^1.0.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-icons": "^5.5.0",
     "react-window": "^1.8.11",
     "react-window-infinite-loader": "^1.0.10",
     "sql-formatter": "^15.6.6",

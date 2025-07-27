@@ -408,11 +408,8 @@ User Request: ${prompt}`,
         console.log("JSON parsing failed:", parseError);
       }
 
-      // If no SQL found, return an error message instead of the explanation text
-      console.log("No SQL found in response text:", result.text);
-      throw new Error(
-        "AI did not generate a valid SQL query. Please try rephrasing your request or check your database connection.",
-      );
+      // Just put the text in the output box
+      return result.text;
     } catch (error) {
       console.error("Failed to generate SQL:", error);
       throw error;
