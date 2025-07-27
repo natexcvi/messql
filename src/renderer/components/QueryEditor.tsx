@@ -8,7 +8,7 @@ import React, {
 import { EditorView, basicSetup } from "codemirror";
 import { sql, PostgreSQL } from "@codemirror/lang-sql";
 import { completionKeymap, acceptCompletion } from "@codemirror/autocomplete";
-import { keymap } from "@codemirror/view";
+import { keymap, placeholder } from "@codemirror/view";
 import { Prec, Compartment } from "@codemirror/state";
 import { ayuLight, coolGlow } from "thememirror";
 import { DatabaseConnection, QueryTab, SchemaInfo } from "../types";
@@ -180,10 +180,16 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
         schema = {};
       }
 
+      // Create placeholder text based on platform
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      const modKey = isMac ? '⌘' : 'Ctrl';
+      const placeholderText = `Write your SQL query here or press ${modKey}+Shift+T to use AI SQL Generator...`;
+
       const view = new EditorView({
         doc: tab.query,
         extensions: [
           basicSetup,
+          placeholder(placeholderText),
           sqlCompartmentRef.current.of(sql({
             dialect: PostgreSQL,
             schema: Object.keys(schema).length > 0 ? schema : undefined,
