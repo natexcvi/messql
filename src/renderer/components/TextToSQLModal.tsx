@@ -344,12 +344,10 @@ Examples:
                   Generating...
                 </div>
               ) : (
-                <>
-                  <MdOutlineAutoAwesome
-                    style={{ fontSize: "16px", marginRight: "6px" }}
-                  />
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <MdOutlineAutoAwesome style={{ fontSize: "16px" }} />
                   Generate SQL
-                </>
+                </div>
               )}
             </button>
             {generatedSQL && (
