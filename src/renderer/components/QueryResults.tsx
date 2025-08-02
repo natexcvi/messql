@@ -15,7 +15,7 @@ export const QueryResults: React.FC<QueryResultsProps> = ({
   if (isExecuting) {
     return (
       <div className="results-container">
-        <div className="loading">
+        <div className="loading" data-testid="query-loading">
           <div>Executing query...</div>
         </div>
       </div>
@@ -50,23 +50,23 @@ export const QueryResults: React.FC<QueryResultsProps> = ({
   return (
     <div className="results-container">
       <div className="results-header">
-        {rowCount} rows returned in {duration}ms
+        <span data-testid="row-count">{rowCount}</span> rows returned in <span data-testid="query-duration">{duration}ms</span>
       </div>
       
       <div className="results-table-container">
-        <table className="results-table">
+        <table className="results-table" data-testid="result-table">
           <thead>
             <tr>
               {fields.map((field, index) => (
-                <th key={index}>{field.name}</th>
+                <th key={index} data-testid="column-header">{field.name}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {rows.map((row, rowIndex) => (
-              <tr key={rowIndex}>
+              <tr key={rowIndex} data-testid="result-row">
                 {fields.map((field, fieldIndex) => (
-                  <td key={fieldIndex}>
+                  <td key={fieldIndex} data-testid="result-cell">
                     {row[field.name] === null ? (
                       <span className="null-value">NULL</span>
                     ) : (

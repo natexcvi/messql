@@ -256,10 +256,10 @@ export const VirtualDataTable: React.FC<VirtualDataTableProps> = ({ result }) =>
               marginRight: '8px',
             }}
           />
-          <button onClick={handleExportCSV} className="export-btn">
+          <button onClick={handleExportCSV} className="export-btn" data-testid="export-csv-btn">
             Export CSV
           </button>
-          <button onClick={handleExportJSON} className="export-btn">
+          <button onClick={handleExportJSON} className="export-btn" data-testid="export-json-btn">
             Export JSON
           </button>
         </div>

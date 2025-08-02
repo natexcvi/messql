@@ -499,8 +499,8 @@ export const App: React.FC = () => {
   const activeConnection = state.connections.find(c => c.id === state.activeConnectionId);
 
   return (
-    <div className="app">
-      <div className="top-bar" />
+    <div className="app" data-testid="app-container">
+      <div className="top-bar" data-testid="app-title" />
       <Sidebar
         connections={state.connections}
         activeConnectionId={state.activeConnectionId}

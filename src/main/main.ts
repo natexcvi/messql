@@ -1,4 +1,11 @@
-import { app, BrowserWindow, ipcMain, Menu, nativeTheme, dialog } from "electron";
+import {
+  app,
+  BrowserWindow,
+  ipcMain,
+  Menu,
+  nativeTheme,
+  dialog,
+} from "electron";
 import * as fs from "fs";
 import * as path from "path";
 import { DatabaseService } from "./services/database";
@@ -214,9 +221,18 @@ const setupIpcHandlers = (): void => {
     return await databaseService.disconnect(connectionId);
   });
 
-  ipcMain.handle("db:query", async (_, connectionId, sql, params, schema, queryId) => {
-    return await databaseService.query(connectionId, sql, params, schema, queryId);
-  });
+  ipcMain.handle(
+    "db:query",
+    async (_, connectionId, sql, params, schema, queryId) => {
+      return await databaseService.query(
+        connectionId,
+        sql,
+        params,
+        schema,
+        queryId,
+      );
+    },
+  );
 
   ipcMain.handle("db:cancelQuery", async (_, queryId) => {
     return await databaseService.cancelQuery(queryId);
@@ -225,7 +241,6 @@ const setupIpcHandlers = (): void => {
   ipcMain.handle("db:getSchemas", async (_, connectionId) => {
     return await databaseService.getSchemas(connectionId);
   });
-
 
   ipcMain.handle(
     "db:getTableSchema",
@@ -259,9 +274,12 @@ const setupIpcHandlers = (): void => {
   });
 
   // Listen for theme changes and notify renderer
-  nativeTheme.on('updated', () => {
+  nativeTheme.on("updated", () => {
     if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send('theme:changed', nativeTheme.shouldUseDarkColors);
+      mainWindow.webContents.send(
+        "theme:changed",
+        nativeTheme.shouldUseDarkColors,
+      );
     }
   });
 
@@ -269,21 +287,21 @@ const setupIpcHandlers = (): void => {
   ipcMain.handle("file:saveQuery", async (_, content: string) => {
     try {
       const { filePath } = await dialog.showSaveDialog(mainWindow, {
-        title: 'Save SQL Query',
-        defaultPath: 'query.sql',
+        title: "Save SQL Query",
+        defaultPath: "query.sql",
         filters: [
-          { name: 'SQL Files', extensions: ['sql'] },
-          { name: 'All Files', extensions: ['*'] }
-        ]
+          { name: "SQL Files", extensions: ["sql"] },
+          { name: "All Files", extensions: ["*"] },
+        ],
       });
 
       if (filePath) {
-        await fs.promises.writeFile(filePath, content, 'utf8');
+        await fs.promises.writeFile(filePath, content, "utf8");
         return filePath;
       }
       return null;
     } catch (error) {
-      console.error('Error saving file:', error);
+      console.error("Error saving file:", error);
       throw error;
     }
   });
@@ -291,47 +309,65 @@ const setupIpcHandlers = (): void => {
   ipcMain.handle("file:loadQuery", async () => {
     try {
       const { filePaths } = await dialog.showOpenDialog(mainWindow, {
-        title: 'Load SQL Query',
+        title: "Load SQL Query",
         filters: [
-          { name: 'SQL Files', extensions: ['sql'] },
-          { name: 'All Files', extensions: ['*'] }
+          { name: "SQL Files", extensions: ["sql"] },
+          { name: "All Files", extensions: ["*"] },
         ],
-        properties: ['openFile']
+        properties: ["openFile"],
       });
 
       if (filePaths && filePaths.length > 0) {
-        const content = await fs.promises.readFile(filePaths[0], 'utf8');
+        const content = await fs.promises.readFile(filePaths[0], "utf8");
         return content;
       }
       return null;
     } catch (error) {
-      console.error('Error loading file:', error);
+      console.error("Error loading file:", error);
       throw error;
     }
   });
 
   // AI service handlers
-  ipcMain.handle("ai:generateTabName", async (_, query: string, credentials) => {
-    return await aiService.generateTabName(query, credentials);
-  });
+  ipcMain.handle(
+    "ai:generateTabName",
+    async (_, query: string, credentials) => {
+      return await aiService.generateTabName(query, credentials);
+    },
+  );
 
-  ipcMain.handle("ai:generateSQL", async (_, prompt: string, schemas, credentials, connectionId?: string) => {
-    const dbFunctions = connectionId ? {
-      getSchemas: (id: string) => databaseService.getSchemas(id),
-      getTableSchema: (id: string, schema: string, table: string) => databaseService.getTableSchema(id, schema, table),
-    } : undefined;
-    
-    return await aiService.generateSQL(prompt, schemas, credentials, connectionId, dbFunctions);
-  });
+  ipcMain.handle(
+    "ai:generateSQL",
+    async (_, prompt: string, schemas, credentials, connectionId?: string) => {
+      const dbFunctions = connectionId
+        ? {
+            getSchemas: (id: string) => databaseService.getSchemas(id),
+            getTableSchema: (id: string, schema: string, table: string) =>
+              databaseService.getTableSchema(id, schema, table),
+          }
+        : undefined;
+
+      return await aiService.generateSQL(
+        prompt,
+        schemas,
+        credentials,
+        connectionId,
+        dbFunctions,
+      );
+    },
+  );
 
   ipcMain.handle("ai:validateCredentials", async (_, credentials) => {
     return await aiService.validateCredentials(credentials);
   });
 
   // AI credentials handlers
-  ipcMain.handle("ai:setCredentials", async (_, provider: string, credentials: string) => {
-    return await keychainService.setAICredentials(provider, credentials);
-  });
+  ipcMain.handle(
+    "ai:setCredentials",
+    async (_, provider: string, credentials: string) => {
+      return await keychainService.setAICredentials(provider, credentials);
+    },
+  );
 
   ipcMain.handle("ai:getCredentials", async (_, provider: string) => {
     return await keychainService.getAICredentials(provider);

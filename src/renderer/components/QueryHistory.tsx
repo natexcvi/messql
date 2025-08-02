@@ -61,7 +61,7 @@ export const QueryHistory: React.FC<QueryHistoryProps> = ({
   };
 
   return (
-    <div className="query-history-panel">
+    <div className="query-history-panel" data-testid="history-section">
       <div className="query-history-header">
         <h3>Query History</h3>
         <button className="close-btn" onClick={onClose}>×</button>
@@ -74,6 +74,7 @@ export const QueryHistory: React.FC<QueryHistoryProps> = ({
           value={filterText}
           onChange={(e) => setFilterText(e.target.value)}
           className="filter-input"
+          data-testid="history-filter-input"
         />
         <label className="error-filter">
           <input
@@ -95,6 +96,7 @@ export const QueryHistory: React.FC<QueryHistoryProps> = ({
             <div 
               key={log.id} 
               className={`query-log-entry ${log.success ? 'success' : 'error'}`}
+              data-testid="history-item"
             >
               <div className="log-header">
                 <span className="log-timestamp">{formatTimestamp(log.timestamp)}</span>

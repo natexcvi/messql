@@ -179,11 +179,12 @@ export const TextToSQLModal: React.FC<TextToSQLModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="connection-modal-overlay" onClick={onClose}>
+    <div className="connection-modal-overlay" onClick={onClose} data-testid="text-to-sql-modal-overlay">
       <div
         className="connection-modal"
         style={{ maxWidth: "800px", width: "90%" }}
         onClick={(e) => e.stopPropagation()}
+        data-testid="text-to-sql-modal"
       >
         <div className="connection-modal-header">
           <h2>
@@ -237,6 +238,7 @@ Examples:
                 rows={5}
                 disabled={isGenerating}
                 required
+                data-testid="text-prompt-input"
               />
             </div>
 
@@ -335,6 +337,7 @@ Examples:
                 minWidth: "140px",
                 fontWeight: 600,
               }}
+              data-testid="generate-sql-btn"
             >
               {isGenerating ? (
                 <div

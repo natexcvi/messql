@@ -36,7 +36,13 @@
     "typecheck": "tsc --noEmit && tsc -p tsconfig.main.json --noEmit",
     "lint": "eslint src --ext .ts,.tsx",
     "dist": "electron-builder",
-    "pack": "electron-builder --dir"
+    "pack": "electron-builder --dir",
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:connection": "playwright test tests/e2e/connection.test.ts",
+    "test:query": "playwright test tests/e2e/query-execution.test.ts",
+    "test:build": "npm run build && npm run test",
+    "test:report": "playwright show-report"
   },
   "keywords": [
     "electron",
@@ -48,6 +54,8 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@playwright/experimental-ct-react": "^1.54.2",
+    "@playwright/test": "^1.54.2",
     "@types/node": "^20.0.0",
     "@types/pg": "^8.15.4",
     "@types/pg-format": "^1.0.5",
@@ -64,6 +72,7 @@
     "eslint-plugin-react": "^7.33.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "html-webpack-plugin": "^5.5.3",
+    "playwright": "^1.54.2",
     "style-loader": "^3.3.3",
     "ts-loader": "^9.4.4",
     "typescript": "^5.8.3",

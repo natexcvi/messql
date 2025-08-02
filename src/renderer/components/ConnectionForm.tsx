@@ -77,15 +77,15 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
   };
 
   return (
-    <div className="connection-modal-overlay">
-      <div className="connection-modal">
+    <div className="connection-modal-overlay" data-testid="connection-modal-overlay">
+      <div className="connection-modal" data-testid="connection-modal">
         <div className="connection-modal-header">
           <h2>{editConnection ? 'Edit Connection' : 'New Connection'}</h2>
         </div>
         
         <form onSubmit={handleSubmit}>
           <div className="connection-modal-body">
-            {error && <div className="error-message">{error}</div>}
+            {error && <div className="error-message" data-testid="error-message">{error}</div>}
             <div className="form-group">
               <label htmlFor="name">Connection Name</label>
               <input
@@ -95,6 +95,7 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
                 value={formData.name}
                 onChange={handleChange}
                 placeholder="Optional display name"
+                data-testid="connection-name-input"
               />
             </div>
 
@@ -107,6 +108,7 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
                 value={formData.host}
                 onChange={handleChange}
                 required
+                data-testid="host-input"
               />
             </div>
 
@@ -119,6 +121,7 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
                 value={formData.port}
                 onChange={handleChange}
                 required
+                data-testid="port-input"
               />
             </div>
 
@@ -131,6 +134,7 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
                 value={formData.database}
                 onChange={handleChange}
                 required
+                data-testid="database-input"
               />
             </div>
 
@@ -143,6 +147,7 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
                 value={formData.username}
                 onChange={handleChange}
                 required
+                data-testid="username-input"
               />
             </div>
 
@@ -156,6 +161,7 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
                 onChange={handleChange}
                 required={!editConnection}
                 placeholder={editConnection ? 'Leave blank to keep current password' : ''}
+                data-testid="password-input"
               />
             </div>
 
@@ -167,6 +173,7 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
                   type="checkbox"
                   checked={formData.ssl}
                   onChange={handleChange}
+                  data-testid="ssl-checkbox"
                 />
                 <label htmlFor="ssl">Use SSL</label>
               </div>
@@ -189,6 +196,7 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
               className="btn btn-secondary"
               onClick={onCancel}
               disabled={isConnecting}
+              data-testid="cancel-btn"
             >
               Cancel
             </button>
@@ -197,6 +205,7 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
               name="save"
               className="btn btn-secondary"
               disabled={isConnecting}
+              data-testid="save-connection-btn"
             >
               Save
             </button>
@@ -205,6 +214,7 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
               name="connect"
               className="btn btn-primary"
               disabled={isConnecting}
+              data-testid="test-connection-btn"
             >
               {isConnecting ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

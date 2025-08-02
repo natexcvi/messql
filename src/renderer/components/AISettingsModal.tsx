@@ -184,6 +184,7 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
                 placeholder="sk-..."
                 disabled={isDisabled}
                 required
+                data-testid="ai-api-key-input"
               />
             </div>
             <div className="form-group">
@@ -379,8 +380,8 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="connection-modal-overlay" onClick={onClose}>
-      <div className="connection-modal" onClick={(e) => e.stopPropagation()}>
+    <div className="connection-modal-overlay" onClick={onClose} data-testid="ai-settings-modal-overlay">
+      <div className="connection-modal" onClick={(e) => e.stopPropagation()} data-testid="ai-settings-modal">
         <div className="connection-modal-header">
           <h2>AI Settings</h2>
         </div>
@@ -392,7 +393,7 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
           }}
         >
           <div className="connection-modal-body">
-            {error && <div className="error-message">{error}</div>}
+            {error && <div className="error-message" data-testid="error-message">{error}</div>}
 
             <div className="form-group">
               <label htmlFor="provider">AI Provider *</label>
@@ -405,12 +406,13 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
                   )
                 }
                 disabled={isLoading || isValidating}
+                data-testid="ai-provider-select"
               >
-                <option value="openai">OpenAI</option>
-                <option value="anthropic">Anthropic</option>
-                <option value="azure">Azure OpenAI</option>
-                <option value="bedrock">Amazon Bedrock</option>
-                <option value="ollama">Ollama (Local)</option>
+                <option value="openai" data-testid="ai-provider-option">OpenAI</option>
+                <option value="anthropic" data-testid="ai-provider-option">Anthropic</option>
+                <option value="azure" data-testid="ai-provider-option">Azure OpenAI</option>
+                <option value="bedrock" data-testid="ai-provider-option">Amazon Bedrock</option>
+                <option value="ollama" data-testid="ai-provider-option">Ollama (Local)</option>
               </select>
             </div>
 
@@ -469,6 +471,7 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
                 isValidating ||
                 (!credentials.apiKey && credentials.provider !== "ollama")
               }
+              data-testid="validate-credentials-btn"
             >
               {isValidating ? (
                 <div

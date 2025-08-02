@@ -8,11 +8,6 @@
     "outDir": "dist",
     "jsx": "preserve"
   },
-  "include": [
-    "src/main/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "src/renderer"
-  ]
+  "include": ["src/main/**/*"],
+  "exclude": ["node_modules", "src/renderer"]
 }

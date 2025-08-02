@@ -47,7 +47,7 @@ export const MainContent: React.FC<MainContentProps> = ({
 
   if (!activeConnection) {
     return (
-      <div className="main-content">
+      <div className="main-content" data-testid="main-content">
         <div className="empty-state">
           <h3>No Connection Selected</h3>
           <p>Select a connection from the sidebar to start querying</p>
@@ -57,7 +57,7 @@ export const MainContent: React.FC<MainContentProps> = ({
   }
 
   return (
-    <div className="main-content">
+    <div className="main-content" data-testid="main-content">
       <TabBar
         tabs={queryTabs}
         activeTabId={activeTabId}

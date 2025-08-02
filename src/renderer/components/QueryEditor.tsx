@@ -351,12 +351,13 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
     };
 
     return (
-      <div className="query-editor">
+      <div className="query-editor" data-testid="query-editor">
         <div className="toolbar">
           <button
             onClick={handleExecute}
             disabled={tab.isExecuting}
             className="primary"
+            data-testid="run-query-btn"
           >
             {tab.isExecuting ? "Executing..." : "Execute (⌘+Enter)"}
           </button>
@@ -366,6 +367,7 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
               onClick={() => onQueryCancel(tab.id)}
               className="secondary"
               title="Cancel running query"
+              data-testid="cancel-query-btn"
             >
               Cancel
             </button>
@@ -431,7 +433,7 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
           <span className="toolbar-info">Connected to: {connection.name}</span>
         </div>
 
-        <div className="editor-container">
+        <div className="editor-container" data-testid="query-input">
           <div
             ref={editorRef}
             style={{
@@ -440,9 +442,9 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
           />
         </div>
 
-        <div className="results-section">
+        <div className="results-section" data-testid="query-results">
           {tab.error && (
-            <div className="error-banner">
+            <div className="error-banner" data-testid="query-error">
               <strong>Error:</strong> {tab.error}
             </div>
           )}

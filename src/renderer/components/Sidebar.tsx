@@ -99,16 +99,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
       ref={sidebarRef}
       className="sidebar"
       style={{ width: sidebarWidth }}
+      data-testid="sidebar"
     >
       <button
         onClick={onNewConnection}
         className="sidebar-button"
+        data-testid="new-connection-btn"
       >
         + New Connection
       </button>
 
       {connections.length > 0 && (
-        <div className="sidebar-section">
+        <div className="sidebar-section" data-testid="connections-section">
           <h4 
             onClick={() => setConnectionsExpanded(!connectionsExpanded)}
             style={{ cursor: 'pointer', userSelect: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}
@@ -125,6 +127,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 cursor: connectingConnectionIds.size > 0 ? 'not-allowed' : 'pointer',
                 opacity: connectingConnectionIds.size > 0 ? 0.6 : 1
               }}
+              data-testid="connection-item"
+              data-connection-name={connection.name}
             >
               <div className="connection-info">
                 <div className="connection-header">
@@ -172,6 +176,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     opacity: connectingConnectionIds.size > 0 ? 0.4 : 1,
                     cursor: connectingConnectionIds.size > 0 ? 'not-allowed' : 'pointer'
                   }}
+                  data-testid="edit-connection-btn"
                 >
                   ✎
                 </button>
@@ -188,6 +193,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     opacity: connectingConnectionIds.size > 0 ? 0.4 : 1,
                     cursor: connectingConnectionIds.size > 0 ? 'not-allowed' : 'pointer'
                   }}
+                  data-testid="delete-connection-btn"
                 >
                   ×
                 </button>
@@ -228,19 +234,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
       )}
 
       {activeConnectionId && (
-        <div className="sidebar-section" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+        <div className="sidebar-section" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }} data-testid="schemas-section">
           <input
             type="text"
             placeholder="Search schemas and tables..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="search-input"
+            data-testid="schema-search-input"
           />
 
           <h4>Database Schema</h4>
-          <div className="schema-tree">
+          <div className="schema-tree" data-testid="schema-tree">
             {filteredSchemas.map(schema => (
-              <div key={schema.name} className="schema-item">
+              <div key={schema.name} className="schema-item" data-testid="schema-item" data-schema-name={schema.name}>
                 <div
                   className="schema-name"
                   onClick={() => toggleSchema(schema.name)}
@@ -263,6 +270,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             opacity: isLoading ? 0.6 : 1,
                             color: isLoading ? 'var(--text-quaternary)' : 'var(--text-tertiary)'
                           }}
+                          data-testid="table-item"
+                          data-schema={schema.name}
+                          data-table={table.name}
                         >
                           <svg 
                             width="14" 

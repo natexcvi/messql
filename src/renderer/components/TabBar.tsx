@@ -25,14 +25,16 @@ export const TabBar: React.FC<TabBarProps> = ({
           key={tab.id}
           className={`tab ${tab.id === activeTabId ? "active" : ""}`}
           onClick={() => onTabSelect(tab.id)}
+          data-testid="query-tab"
         >
-          <span className="tab-title">{tab.title}</span>
+          <span className="tab-title" data-testid="tab-name">{tab.title}</span>
           <button
             className="tab-close"
             onClick={(e) => {
               e.stopPropagation();
               onTabClose(tab.id);
             }}
+            data-testid="close-tab-btn"
           >
             ×
           </button>
@@ -43,6 +45,7 @@ export const TabBar: React.FC<TabBarProps> = ({
         className="new-tab-button"
         onClick={onNewTab}
         title="New Query (⌘+T)"
+        data-testid="new-tab-btn"
       >
         +
       </button>
