@@ -10,6 +10,7 @@ import { useTheme } from './hooks/useTheme';
 import { DatabaseConnection, QueryTab, AppState, SchemaInfo, TableInfo, QueryLogEntry } from './types';
 import { generateTabName } from './utils/tabNaming';
 import { generateSmartTabName, refreshTabName, clearCredentialsCache } from './utils/aiTabNaming';
+import { extractErrorMessage } from './utils/errorHandling';
 
 export const App: React.FC = () => {
   const { isDark } = useTheme();
@@ -248,7 +249,7 @@ export const App: React.FC = () => {
       });
     } catch (error) {
       const duration = Date.now() - startTime;
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage = extractErrorMessage(error);
       
       // Log failed query
       const logEntry: QueryLogEntry = {
@@ -394,7 +395,7 @@ export const App: React.FC = () => {
       } catch (error) {
         console.error('Failed to reconnect after connection update:', error);
         // Show error to user
-        alert(`Connection updated but failed to reconnect: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        alert(`Connection updated but failed to reconnect: ${extractErrorMessage(error)}`);
       }
     }
   }, [state.connections, state.activeConnectionId, editingConnection, disconnect, connect]);
@@ -530,7 +531,7 @@ export const App: React.FC = () => {
               loadDefaultSchemaTableSchemas(connection.id, schemas);
             }
           } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            const errorMessage = extractErrorMessage(error);
             setConnectionErrors(prev => ({ ...prev, [id]: errorMessage }));
           } finally {
             setConnectingConnectionIds(prev => {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { LoadingSpinner } from "./LoadingSpinner";
+import { extractErrorMessage } from '../utils/errorHandling';
 import {
   MdOutlineSmartToy,
   MdOutlineAutoAwesome,
@@ -157,7 +158,7 @@ export const TextToSQLModal: React.FC<TextToSQLModalProps> = ({
       }
     } catch (error: any) {
       console.error("SQL generation error:", error);
-      setError(error.message || "Failed to generate SQL");
+      setError(extractErrorMessage(error));
     } finally {
       setIsGenerating(false);
     }

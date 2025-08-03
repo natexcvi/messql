@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { LoadingSpinner } from "./LoadingSpinner";
+import { extractErrorMessage } from '../utils/errorHandling';
 
 interface AICredentials {
   provider: "openai" | "anthropic" | "azure" | "bedrock" | "ollama";
@@ -116,7 +117,7 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
       }
       return true;
     } catch (error: any) {
-      setError(error.message || "Failed to validate credentials");
+      setError(extractErrorMessage(error));
       return false;
     } finally {
       setIsValidating(false);
@@ -156,7 +157,7 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
       onSave(credentials);
       onClose();
     } catch (error: any) {
-      setError(error.message || "Failed to save credentials");
+      setError(extractErrorMessage(error));
     } finally {
       setIsLoading(false);
     }
