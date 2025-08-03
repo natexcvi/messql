@@ -35,6 +35,7 @@ test.describe("Query Execution", () => {
       const results = await mainPage.queryEditorPage.getQueryResults();
       expect(results.length).toBeGreaterThan(0);
       expect(results[1][0]).toBe("1");
+      await mainPage.closeCurrentTab();
     });
 
     test("should show query execution time", async () => {
@@ -52,6 +53,7 @@ test.describe("Query Execution", () => {
         // Query execution may fail without a real database
         await expect(mainPage.queryEditorPage.executeButton).toBeEnabled();
       }
+      await mainPage.closeCurrentTab();
     });
 
     test("should display column headers", async () => {
@@ -71,6 +73,7 @@ test.describe("Query Execution", () => {
         // Query execution may fail without a real database
         await expect(mainPage.queryEditorPage.executeButton).toBeEnabled();
       }
+      await mainPage.closeCurrentTab();
     });
 
     test("should show row count for results", async () => {
@@ -86,6 +89,7 @@ test.describe("Query Execution", () => {
       const results = await mainPage.queryEditorPage.getQueryResults();
       expect(results.length).toBe(6);
       await expect(mainPage.queryEditorPage.resultsInfo).toHaveText("5 rows");
+      await mainPage.closeCurrentTab();
     });
 
     test("should query world database tables", async () => {
@@ -101,6 +105,7 @@ test.describe("Query Execution", () => {
       });
       const results = await mainPage.queryEditorPage.getQueryResults();
       expect(results.length).toBe(6);
+      await mainPage.closeCurrentTab();
     });
   });
 
@@ -114,6 +119,8 @@ test.describe("Query Execution", () => {
       await expect(mainPage.queryEditorPage.errorContainer).toBeVisible({
         timeout: 10000,
       });
+
+      await mainPage.closeCurrentTab();
     });
 
     test("should handle table not found errors", async () => {
@@ -127,6 +134,8 @@ test.describe("Query Execution", () => {
       await expect(mainPage.queryEditorPage.errorContainer).toBeVisible({
         timeout: 10000,
       });
+
+      await mainPage.closeCurrentTab();
     });
 
     test("should clear previous results on new query", async () => {
@@ -142,6 +151,8 @@ test.describe("Query Execution", () => {
       // Previous results should be cleared
       // This would need implementation in the actual app
       await expect(mainPage.queryEditorPage.executeButton).toBeEnabled();
+
+      await mainPage.closeCurrentTab();
     });
   });
 
@@ -156,6 +167,8 @@ test.describe("Query Execution", () => {
 
       // Should be able to run new query
       await expect(mainPage.queryEditorPage.executeButton).toBeEnabled();
+
+      await mainPage.closeCurrentTab();
     });
 
     test("should show loading indicator during query execution", async () => {
@@ -165,6 +178,8 @@ test.describe("Query Execution", () => {
 
       // Should show loading state briefly
       await expect(mainPage.queryEditorPage.executeButton).toBeEnabled();
+
+      await mainPage.closeCurrentTab();
     });
   });
 });
