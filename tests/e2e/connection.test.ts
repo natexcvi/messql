@@ -1,12 +1,21 @@
 import { test, expect } from '../helpers/electron-app'
 import { MainPage } from '../page-objects/MainPage'
+import { TestConnection } from '../helpers/test-connection'
+import { TestDatabase } from '../helpers/test-database'
 
 test.describe('Connection Management', () => {
   let mainPage: MainPage
+  let testConnection: TestConnection
 
   test.beforeEach(async ({ page }) => {
     mainPage = new MainPage(page)
+    testConnection = new TestConnection(page)
     await mainPage.waitForAppToLoad()
+  })
+
+  test.afterEach(async () => {
+    // Clean up any connections created during the test
+    await testConnection.cleanup()
   })
 
   test.describe('New Connection Creation', () => {
@@ -16,22 +25,10 @@ test.describe('Connection Management', () => {
       await expect(mainPage.connectionPage.connectionModal).toBeVisible()
     })
 
-    test('should create new connection with valid data', async () => {
-      await mainPage.connectionPage.openNewConnectionModal()
+    test('should create new connection with valid data', async ({ page }) => {
+      const connectionName = await testConnection.createTestConnection('valid-connection')
       
-      const connectionData = {
-        name: 'Test Connection',
-        host: 'localhost',
-        port: '5432',
-        database: 'testdb',
-        username: 'testuser',
-        password: 'testpass'
-      }
-      
-      await mainPage.connectionPage.fillConnectionForm(connectionData)
-      await mainPage.connectionPage.saveConnection()
-      
-      const connection = await mainPage.connectionPage.getConnectionByName('Test Connection')
+      const connection = await mainPage.connectionPage.getConnectionByName(connectionName)
       await expect(connection).toBeVisible()
     })
 
@@ -47,19 +44,19 @@ test.describe('Connection Management', () => {
       await mainPage.connectionPage.openNewConnectionModal()
       
       const connectionData = {
-        name: 'Test Connection',
-        host: 'localhost',
-        port: '5432',
-        database: 'postgres',
-        username: 'postgres',
-        password: 'password'
+        name: TestDatabase.getConnectionName('test-connection'),
+        host: TestDatabase.config.host,
+        port: TestDatabase.config.port,
+        database: TestDatabase.config.database,
+        username: TestDatabase.config.username,
+        password: TestDatabase.config.password
       }
       
       await mainPage.connectionPage.fillConnectionForm(connectionData)
       await mainPage.connectionPage.testConnection()
       
-      // This test would need a real PostgreSQL server to pass
-      // For now, we just check that the test connection button works
+      // Should show success for valid connection
+      await mainPage.connectionPage.waitForConnectionSuccess()
       await expect(mainPage.connectionPage.testConnectionButton).toBeEnabled()
     })
 

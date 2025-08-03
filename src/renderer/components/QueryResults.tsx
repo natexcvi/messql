@@ -1,5 +1,5 @@
-import React from 'react';
-import { QueryResult } from '../types';
+import React from "react";
+import { QueryResult } from "../types";
 
 interface QueryResultsProps {
   result?: QueryResult;
@@ -25,7 +25,7 @@ export const QueryResults: React.FC<QueryResultsProps> = ({
   if (error) {
     return (
       <div className="results-container">
-        <div className="error">
+        <div className="error" data-testid="query-error">
           <strong>Error:</strong> {error}
         </div>
       </div>
@@ -37,7 +37,7 @@ export const QueryResults: React.FC<QueryResultsProps> = ({
       <div className="results-container">
         <div className="empty-state">
           <div>No results yet</div>
-          <div style={{ fontSize: '12px', color: '#999', marginTop: '5px' }}>
+          <div style={{ fontSize: "12px", color: "#999", marginTop: "5px" }}>
             Execute a query to see results here
           </div>
         </div>
@@ -50,15 +50,18 @@ export const QueryResults: React.FC<QueryResultsProps> = ({
   return (
     <div className="results-container">
       <div className="results-header">
-        <span data-testid="row-count">{rowCount}</span> rows returned in <span data-testid="query-duration">{duration}ms</span>
+        <span data-testid="row-count">{rowCount}</span> rows returned in{" "}
+        <span data-testid="query-duration">{duration}ms</span>
       </div>
-      
+
       <div className="results-table-container">
-        <table className="results-table" data-testid="result-table">
+        <table className="results-table" data-testid="results-table">
           <thead>
             <tr>
               {fields.map((field, index) => (
-                <th key={index} data-testid="column-header">{field.name}</th>
+                <th key={index} data-testid="column-header">
+                  {field.name}
+                </th>
               ))}
             </tr>
           </thead>

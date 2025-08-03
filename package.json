@@ -41,6 +41,7 @@
     "test:headed": "playwright test --headed",
     "test:connection": "playwright test tests/e2e/connection.test.ts",
     "test:query": "playwright test tests/e2e/query-execution.test.ts",
+    "test:tabs": "playwright test tests/e2e/tab-management.test.ts",
     "test:build": "npm run build && npm run test",
     "test:report": "playwright show-report"
   },

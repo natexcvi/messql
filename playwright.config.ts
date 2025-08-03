@@ -19,6 +19,7 @@ export default defineConfig({
     video: 'retain-on-failure',
     trace: 'on-first-retry',
   },
+  globalSetup: require.resolve('./tests/helpers/global-setup.ts'),
   projects: [
     {
       name: 'electron-tests',
