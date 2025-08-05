@@ -19,6 +19,7 @@ A clean PostgreSQL client for macOS. Fast, simple, and actually pleasant to use.
 
 ```bash
 git clone [repo]
+git checkout tags/v0.0.1
 npm install && npm run build && npm run dist
 ```
 
