@@ -116,7 +116,11 @@ export const DataTable: React.FC<DataTableProps> = ({ result }) => {
       return fields.some((field) => {
         const value = row[field.name];
         if (value === null) return false;
-        return String(value).toLowerCase().includes(lowerFilter);
+
+        const stringValue =
+          typeof value === "object" ? JSON.stringify(value) : String(value);
+
+        return stringValue.toLowerCase().includes(lowerFilter);
       });
     });
   }, [rows, fields, filterText]);

@@ -331,25 +331,6 @@ ${query}`,
             return result;
           },
         }),
-        executeQuery: tool({
-          description:
-            "REQUIRED: Use this tool to provide your final SQL query answer. This is the ONLY way to return SQL to the user.",
-          parameters: z.object({
-            query: z
-              .string()
-              .describe("The complete SQL query that answers the user request"),
-            explanation: z
-              .string()
-              .describe("Brief explanation of what the query does"),
-          }),
-          execute: async ({ query, explanation }) => {
-            console.log("Tool: executeQuery called with:", {
-              query,
-              explanation,
-            });
-            return { query, explanation, status: "ready" };
-          },
-        }),
       };
 
       console.log("Available schemas:", schemaNames);
@@ -366,9 +347,14 @@ IMPORTANT: You MUST follow this exact process:
 1. Use listSchemas tool to see available schemas
 2. Use listTables tool to explore tables in relevant schemas
 3. Use getTableSchema tool to get column details for tables you need
-4. After gathering the information you need, you MUST call the executeQuery tool with your final SQL query
+4. After gathering the information you need, provide your final answer in the following JSON format:
 
-You MUST end by calling executeQuery with the SQL query. Do not provide explanations in regular text - only use the executeQuery tool for your final answer.
+{
+  "sql": "Your complete SQL query here",
+  "explanation": "Brief explanation of what the query does"
+}
+
+IMPORTANT: Your final response MUST be valid JSON in the exact format shown above. Include SQL comments in the query itself to explain complex parts.
 
 User Request: ${prompt}`,
         temperature: 0.1,
@@ -382,33 +368,30 @@ User Request: ${prompt}`,
         toolCallNames: result.toolCalls?.map((call) => call.toolName),
       });
 
-      // Extract the SQL query from tool calls
-      if (result.toolCalls && result.toolCalls.length > 0) {
-        const queryCall = result.toolCalls.find(
-          (call) => call.toolName === "executeQuery",
-        );
-        console.log("Found executeQuery call:", queryCall);
-
-        if (queryCall && "query" in queryCall.args) {
-          const sqlQuery = queryCall.args.query as string;
-          console.log("Extracted SQL query:", sqlQuery);
-          return sqlQuery;
-        }
-      }
-
-      // Try JSON parsing as fallback
-      console.log("Trying JSON parsing fallback...");
+      // Extract the SQL query from the structured response
+      console.log("Parsing structured response...");
       try {
-        const jsonResponse = JSON.parse(result.text);
-        if (jsonResponse.query && typeof jsonResponse.query === "string") {
-          console.log("Found SQL in JSON response:", jsonResponse.query);
-          return jsonResponse.query;
+        // Find the JSON response in the text (it might be preceded by tool call outputs)
+        const jsonMatch = result.text.match(
+          /\{[\s\S]*"sql"[\s\S]*"explanation"[\s\S]*\}/m,
+        );
+        if (jsonMatch) {
+          const jsonResponse = JSON.parse(jsonMatch[0]);
+          if (jsonResponse.sql && typeof jsonResponse.sql === "string") {
+            console.log("Found SQL in structured response:", jsonResponse.sql);
+            // Add the explanation as a comment at the top of the SQL
+            const sqlWithComment = `-- ${jsonResponse.explanation}\n\n${jsonResponse.sql}`;
+            return sqlWithComment;
+          }
         }
       } catch (parseError) {
         console.log("JSON parsing failed:", parseError);
       }
 
-      // Just put the text in the output box
+      // Fallback: return the raw text if parsing fails
+      console.warn(
+        "Failed to extract structured SQL response, returning raw text",
+      );
       return result.text;
     } catch (error) {
       console.error("Failed to generate SQL:", error);
