@@ -1,12 +1,22 @@
-import { Pool } from 'pg';
-import format from 'pg-format';
-import { DatabaseConnection, QueryResult, SchemaInfo, TableInfo, ColumnInfo } from '../preload';
+import { Pool } from "pg";
+import format from "pg-format";
+import {
+  DatabaseConnection,
+  QueryResult,
+  SchemaInfo,
+  TableInfo,
+  ColumnInfo,
+} from "../preload";
 
 export class DatabaseService {
   private pools: Map<string, Pool> = new Map();
-  private activeQueries: Map<string, { client: any; queryId: string }> = new Map();
+  private activeQueries: Map<string, { client: any; queryId: string }> =
+    new Map();
 
-  async connect(config: DatabaseConnection, password: string): Promise<{ connectionId: string; error?: string }> {
+  async connect(
+    config: DatabaseConnection,
+    password: string,
+  ): Promise<{ connectionId: string; error?: string }> {
     const pool = new Pool({
       host: config.host,
       port: config.port,
@@ -37,24 +47,30 @@ export class DatabaseService {
     }
   }
 
-  async query(connectionId: string, sql: string, params: any[] = [], schema?: string, queryId?: string): Promise<QueryResult> {
+  async query(
+    connectionId: string,
+    sql: string,
+    params: any[] = [],
+    schema?: string,
+    queryId?: string,
+  ): Promise<QueryResult> {
     const pool = this.pools.get(connectionId);
     if (!pool) {
-      throw new Error('Connection not found');
+      throw new Error("Connection not found");
     }
 
     const client = await pool.connect();
     const actualQueryId = queryId || Date.now().toString();
-    
+
     // Track this query for potential cancellation
     this.activeQueries.set(actualQueryId, { client, queryId: actualQueryId });
-    
+
     const startTime = Date.now();
     try {
-      await client.query('BEGIN');
+      await client.query("BEGIN");
 
       if (schema) {
-        const schemaSetSql = format('SET search_path = %L, public', schema);
+        const schemaSetSql = format("SET search_path = %L, public", schema);
         await client.query(schemaSetSql);
       }
 
@@ -65,23 +81,23 @@ export class DatabaseService {
         if (statement.trim()) {
           // Check if query was cancelled before executing each statement
           if (!this.activeQueries.has(actualQueryId)) {
-            throw new Error('Query was cancelled');
+            throw new Error("Query was cancelled");
           }
           // Use rowMode: 'array' to get values by position when there are duplicate column names
           lastResult = await client.query({
             text: statement,
             values: params,
-            rowMode: 'array'
+            rowMode: "array",
           });
         }
       }
 
-      await client.query('COMMIT');
+      await client.query("COMMIT");
       const duration = Date.now() - startTime;
-      
+
       // Process fields and convert array rows to objects
       const processedFields = this.renameDuplicateFields(lastResult.fields);
-      
+
       // Convert array-based rows to objects using the processed field names
       const processedRows = lastResult.rows.map((row: any[]) => {
         const obj: any = {};
@@ -90,7 +106,7 @@ export class DatabaseService {
         });
         return obj;
       });
-      
+
       return {
         rows: processedRows,
         fields: processedFields,
@@ -98,7 +114,7 @@ export class DatabaseService {
         duration,
       };
     } catch (error) {
-      await client.query('ROLLBACK');
+      await client.query("ROLLBACK");
       throw new Error(`Query failed: ${error}`);
     } finally {
       // Remove from active queries and release client
@@ -109,25 +125,25 @@ export class DatabaseService {
 
   private renameDuplicateFields(fields: any[]): any[] {
     const nameCount = new Map<string, number>();
-    
+
     return fields.map((field) => {
       const count = nameCount.get(field.name) || 0;
       nameCount.set(field.name, count + 1);
-      
+
       if (count > 0) {
         // Append index for duplicate names
         return { ...field, name: `${field.name}_${count}` };
       }
-      
+
       return field;
     });
   }
 
   private splitStatements(sql: string): string[] {
     const statements: string[] = [];
-    let currentStatement = '';
+    let currentStatement = "";
     let inString = false;
-    let stringChar = '';
+    let stringChar = "";
 
     for (let i = 0; i < sql.length; i++) {
       const char = sql[i];
@@ -151,16 +167,16 @@ export class DatabaseService {
           inString = true;
           stringChar = char;
           currentStatement += char;
-        } else if (char === ';') {
+        } else if (char === ";") {
           statements.push(currentStatement);
-          currentStatement = '';
+          currentStatement = "";
         } else {
           currentStatement += char;
         }
       }
     }
 
-    if (currentStatement.trim()) {
+    if (currentStatement.trim().length > 0) {
       statements.push(currentStatement);
     }
 
@@ -194,7 +210,11 @@ export class DatabaseService {
     return Array.from(schemasMap.values());
   }
 
-  async getTableSchema(connectionId: string, schema: string, table: string): Promise<TableInfo> {
+  async getTableSchema(
+    connectionId: string,
+    schema: string,
+    table: string,
+  ): Promise<TableInfo> {
     const sql = `
       SELECT
         c.column_name,
@@ -221,10 +241,10 @@ export class DatabaseService {
     `;
 
     const result = await this.query(connectionId, sql, [schema, table]);
-    const columns = result.rows.map(row => ({
+    const columns = result.rows.map((row) => ({
       name: row.column_name as string,
       type: row.data_type as string,
-      nullable: row.is_nullable === 'YES',
+      nullable: row.is_nullable === "YES",
       default: row.column_default as string | null,
       isPrimaryKey: row.is_primary_key as boolean,
       isForeignKey: row.is_foreign_key as boolean,
@@ -237,7 +257,10 @@ export class DatabaseService {
     };
   }
 
-  async getSchemaTableSchemas(connectionId: string, schema: string): Promise<TableInfo[]> {
+  async getSchemaTableSchemas(
+    connectionId: string,
+    schema: string,
+  ): Promise<TableInfo[]> {
     const sql = `
       SELECT
         c.table_name,
@@ -263,22 +286,22 @@ export class DatabaseService {
       ) fk ON c.table_schema = fk.table_schema AND c.table_name = fk.table_name AND c.column_name = fk.column_name
       WHERE c.table_schema = $1
       AND c.table_name IN (
-        SELECT table_name 
-        FROM information_schema.tables 
-        WHERE table_schema = $1 
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_schema = $1
         AND table_type = 'BASE TABLE'
       )
       ORDER BY c.table_name, c.ordinal_position;
     `;
 
     const result = await this.query(connectionId, sql, [schema]);
-    
+
     // Group columns by table
     const tableMap = new Map<string, TableInfo>();
-    
-    result.rows.forEach(row => {
+
+    result.rows.forEach((row) => {
       const tableName = row.table_name as string;
-      
+
       if (!tableMap.has(tableName)) {
         tableMap.set(tableName, {
           name: tableName,
@@ -286,12 +309,12 @@ export class DatabaseService {
           columns: [],
         });
       }
-      
+
       const table = tableMap.get(tableName)!;
       table.columns.push({
         name: row.column_name as string,
         type: row.data_type as string,
-        nullable: row.is_nullable === 'YES',
+        nullable: row.is_nullable === "YES",
         default: row.column_default as string | null,
         isPrimaryKey: row.is_primary_key as boolean,
         isForeignKey: row.is_foreign_key as boolean,
@@ -308,7 +331,7 @@ export class DatabaseService {
         // Cancel the PostgreSQL query
         await activeQuery.client.cancel();
       } catch (error) {
-        console.error('Error cancelling query:', error);
+        console.error("Error cancelling query:", error);
       }
       // Remove from active queries regardless of cancel success
       this.activeQueries.delete(queryId);

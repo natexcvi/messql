@@ -83,7 +83,7 @@ export class AIService {
 
       case "ollama": {
         const ollama = createOllama({
-          baseURL: credentials.baseUrl || "http://localhost:11434",
+          baseURL: credentials.baseUrl || "http://127.0.0.1:11434/api",
         });
         return ollama(credentials.model || "llama3.2");
       }
