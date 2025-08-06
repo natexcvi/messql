@@ -10,7 +10,6 @@ export class MainPage extends BasePage {
   readonly loadingSpinner: Locator;
   readonly menuBar: Locator;
   readonly statusBar: Locator;
-  readonly connectionStatus: Locator;
   readonly appTitle: Locator;
 
   // Page object instances
@@ -25,7 +24,6 @@ export class MainPage extends BasePage {
     this.loadingSpinner = page.locator('[data-testid="loading-spinner"]');
     this.menuBar = page.locator('[data-testid="menu-bar"]');
     this.statusBar = page.locator('[data-testid="status-bar"]');
-    this.connectionStatus = page.locator('[data-testid="connection-status"]');
     this.appTitle = page.locator('[data-testid="app-title"]');
 
     this.connectionPage = new ConnectionPage(page);
@@ -60,15 +58,6 @@ export class MainPage extends BasePage {
 
     // Give the app a moment to stabilize
     await this.pause(1000);
-  }
-
-  async getConnectionStatus(): Promise<string> {
-    return (await this.connectionStatus.textContent()) || "";
-  }
-
-  async isConnected(): Promise<boolean> {
-    const status = await this.getConnectionStatus();
-    return status.toLowerCase().includes("connected");
   }
 
   async waitForConnection(timeout = 30000): Promise<void> {

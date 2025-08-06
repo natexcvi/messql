@@ -13,9 +13,10 @@ test.describe("Connection Management", () => {
     await mainPage.waitForAppToLoad();
   });
 
-  test.afterEach(async () => {
-    // Clean up any connections created during the test
-    await testConnection.cleanup();
+  test.afterEach(async ({ page }) => {
+    await page.evaluate(() => {
+      localStorage.clear();
+    });
   });
 
   test.describe("New Connection Creation", () => {
@@ -31,7 +32,8 @@ test.describe("Connection Management", () => {
 
       const connection =
         await mainPage.connectionPage.getConnectionByName(connectionName);
-      await expect(connection).toBeVisible();
+      expect(connection).not.toBeNull();
+      await expect(connection!).toBeVisible();
     });
 
     test("should validate required fields", async () => {
@@ -78,7 +80,8 @@ test.describe("Connection Management", () => {
       const connection = await mainPage.connectionPage.getConnectionByName(
         "Cancelled Connection",
       );
-      await expect(connection).not.toBeVisible();
+      expect(connection).not.toBeNull();
+      await expect(connection!).not.toBeVisible();
     });
   });
 
@@ -89,10 +92,10 @@ test.describe("Connection Management", () => {
       await mainPage.connectionPage.fillConnectionForm({
         name: "Management Test Connection",
         host: "localhost",
-        port: "5432",
-        database: "testdb",
-        username: "testuser",
-        password: "testpass",
+        port: "5433",
+        database: "world-db",
+        username: "world",
+        password: "world123",
       });
       await mainPage.connectionPage.saveConnection();
     });
@@ -111,7 +114,8 @@ test.describe("Connection Management", () => {
         await mainPage.connectionPage.getConnectionByName(
           "Updated Connection Name",
         );
-      await expect(updatedConnection).toBeVisible();
+      expect(updatedConnection).not.toBeNull();
+      await expect(updatedConnection!).toBeVisible();
     });
 
     test("should delete existing connection", async () => {
@@ -123,21 +127,20 @@ test.describe("Connection Management", () => {
         await mainPage.connectionPage.getConnectionByName(
           "Management Test Connection",
         );
-      await expect(deletedConnection).not.toBeVisible();
+      expect(deletedConnection).not.toBeNull();
+      await expect(deletedConnection!).not.toBeVisible();
     });
 
-    test("should connect to database", async () => {
+    test("should connect to database", async ({ page }) => {
       await mainPage.connectionPage.connectToDatabase(
         "Management Test Connection",
       );
 
-      // Wait for connection to be established (this would fail without a real DB)
-      // For testing purposes, we'll just check that the connection attempt was made
       await mainPage.pause(2000);
 
-      const connectionStatus = await mainPage.getConnectionStatus();
-      // This assertion would need to be adjusted based on actual connection behavior
-      expect(connectionStatus).toBeDefined();
+      await expect(
+        page.locator('[data-testid="connection-error"]'),
+      ).not.toBeVisible();
     });
   });
 

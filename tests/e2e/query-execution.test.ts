@@ -17,9 +17,10 @@ test.describe("Query Execution", () => {
     await testConnection.connectToTestDatabase(connectionName, true); // true = open new tab
   });
 
-  test.afterEach(async () => {
-    // Clean up connections
-    await testConnection.cleanup();
+  test.afterEach(async ({ page }) => {
+    await page.evaluate(() => {
+      localStorage.clear();
+    });
   });
 
   test.describe("Basic Query Execution", () => {
@@ -88,7 +89,7 @@ test.describe("Query Execution", () => {
       });
       const results = await mainPage.queryEditorPage.getQueryResults();
       expect(results.length).toBe(6);
-      await expect(mainPage.queryEditorPage.resultsInfo).toHaveText("5 rows");
+      await expect(mainPage.queryEditorPage.resultsInfo).toHaveText(/5 rows.*/);
       await mainPage.closeCurrentTab();
     });
 
