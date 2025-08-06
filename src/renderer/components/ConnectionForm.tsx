@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import { DatabaseConnection } from '../types';
 import { useDatabase } from '../hooks/useDatabase';
 import { LoadingSpinner } from './LoadingSpinner';
@@ -38,7 +39,7 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
     const submitter = (e.nativeEvent as any).submitter;
     const action = submitter.name;
     
-    const connectionId = editConnection?.id || `${formData.host}:${formData.port}:${formData.database}:${formData.username}`;
+    const connectionId = editConnection?.id || uuidv4();
     
     try {
       // Save password to keychain only if provided

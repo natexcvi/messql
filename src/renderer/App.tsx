@@ -40,10 +40,54 @@ export const App: React.FC = () => {
   // Load connections on startup
   useEffect(() => {
     const savedConnections = JSON.parse(localStorage.getItem('messql_connections') || '[]');
-    setState(prev => ({
-      ...prev,
-      connections: savedConnections,
-    }));
+    
+    // Migration: Update connections that use old-style IDs to use UUIDs
+    const migrateConnections = async () => {
+      const migratedConnections: DatabaseConnection[] = [];
+      let needsMigration = false;
+      
+      for (const conn of savedConnections) {
+        // Check if connection uses old-style ID format (contains colons)
+        if (conn.id.includes(':')) {
+          const { v4: uuidv4 } = require('uuid');
+          const newId = uuidv4();
+          const oldId = conn.id;
+          
+          console.log(`Migrating connection "${conn.name}" from ID "${oldId}" to "${newId}"`);
+          
+          // Migrate keychain password from old ID to new ID
+          try {
+            const password = await window.electronAPI.keychain.get('postgres', oldId);
+            if (password) {
+              await window.electronAPI.keychain.set('postgres', newId, password);
+              await window.electronAPI.keychain.delete('postgres', oldId);
+              console.log(`Migrated password for connection "${conn.name}"`);
+            }
+          } catch (error) {
+            console.warn(`Failed to migrate password for connection "${conn.name}":`, error);
+            // Continue with migration even if password migration fails
+          }
+          
+          migratedConnections.push({ ...conn, id: newId });
+          needsMigration = true;
+        } else {
+          migratedConnections.push(conn);
+        }
+      }
+      
+      // Save migrated connections back to localStorage if any were updated
+      if (needsMigration) {
+        localStorage.setItem('messql_connections', JSON.stringify(migratedConnections));
+        console.log('Connection migration completed');
+      }
+      
+      setState(prev => ({
+        ...prev,
+        connections: migratedConnections,
+      }));
+    };
+    
+    migrateConnections();
 
     // Set up callback for checking open tabs
     window.electronAPI.setHasOpenTabsCallback(() => {
@@ -364,6 +408,24 @@ export const App: React.FC = () => {
   }, [state.activeConnectionId, updateQueryTab, loadSchemaDetails]);
 
   const saveConnection = useCallback(async (connection: DatabaseConnection) => {
+    // Check for duplicate credentials (only for new connections, not edits)
+    if (!editingConnection) {
+      const isDuplicate = state.connections.some(c => 
+        c.host === connection.host &&
+        c.port === connection.port &&
+        c.database === connection.database &&
+        c.username === connection.username
+      );
+      
+      if (isDuplicate) {
+        setState(prev => ({
+          ...prev,
+          error: 'A connection with these credentials already exists. Please modify the connection details or use the existing connection.',
+        }));
+        return;
+      }
+    }
+    
     const updatedConnections = editingConnection
       ? state.connections.map(c => c.id === connection.id ? connection : c)
       : [...state.connections, connection];
@@ -402,13 +464,13 @@ export const App: React.FC = () => {
 
   const editConnection = useCallback((connection: DatabaseConnection) => {
     setEditingConnection(connection);
-    setState(prev => ({ ...prev, showConnectionForm: true }));
+    setState(prev => ({ ...prev, showConnectionForm: true, error: null }));
   }, []);
 
   useEffect(() => {
     const handleNewConnection = () => {
       setEditingConnection(null);
-      setState(prev => ({ ...prev, showConnectionForm: true }));
+      setState(prev => ({ ...prev, showConnectionForm: true, error: null }));
     };
     
     const handleAISettings = () => {
@@ -545,7 +607,7 @@ export const App: React.FC = () => {
         onConnectionEdit={editConnection}
         onNewConnection={() => {
           setEditingConnection(null);
-          setState(prev => ({ ...prev, showConnectionForm: true }));
+          setState(prev => ({ ...prev, showConnectionForm: true, error: null }));
         }}
         onTableSelect={async (schema, table) => {
           const tableKey = `${schema}.${table}`;
@@ -655,7 +717,7 @@ export const App: React.FC = () => {
           onSave={saveConnection}
           onCancel={() => {
             setEditingConnection(null);
-            setState(prev => ({ ...prev, showConnectionForm: false }));
+            setState(prev => ({ ...prev, showConnectionForm: false, error: null }));
           }}
           isConnecting={state.isConnecting}
           error={connectionError}
