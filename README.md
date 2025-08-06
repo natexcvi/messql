@@ -8,18 +8,18 @@ A clean PostgreSQL client for macOS. Fast, simple, and actually pleasant to use.
 
 ## Features
 
-**Smart Editor** - CodeMirror 6 with PostgreSQL syntax highlighting and schema-aware autocomplete  
-**Multi-Tab Support** - Work with multiple queries at once  
-**Native macOS** - Feels right at home on your Mac  
-**Secure Storage** - Passwords stored safely in macOS keychain  
-**Quick Export** - CSV/JSON export with ⌘+E  
+**Smart Editor** - CodeMirror 6 with PostgreSQL syntax highlighting and schema-aware autocomplete
+**Multi-Tab Support** - Work with multiple queries at once
+**Native macOS** - Feels right at home on your Mac
+**Secure Storage** - Passwords stored safely in macOS keychain
+**Quick Export** - CSV/JSON export with ⌘+E
 **Keyboard First** - ⌘+Enter runs queries, ⌘+T opens new tabs
 
 ## Get Started
 
 ```bash
 git clone [repo]
-git checkout tags/v0.0.1
+git checkout tags/v0.0.2
 npm install && npm run build && npm run dist
 ```
 
