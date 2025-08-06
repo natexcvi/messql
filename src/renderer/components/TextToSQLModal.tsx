@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { LoadingSpinner } from "./LoadingSpinner";
 import { extractErrorMessage } from '../utils/errorHandling';
 import {
@@ -57,10 +57,14 @@ export const TextToSQLModal: React.FC<TextToSQLModalProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState("");
   const [credentials, setCredentials] = useState<AICredentials | null>(null);
+  const promptTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (isOpen) {
       loadAICredentials();
+      setTimeout(() => {
+        promptTextareaRef.current?.focus();
+      }, 100);
     }
   }, [isOpen]);
 
@@ -226,9 +230,16 @@ export const TextToSQLModal: React.FC<TextToSQLModalProps> = ({
               </label>
               <textarea
                 id="prompt"
+                ref={promptTextareaRef}
                 className="styled-textarea"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
+                onKeyDown={(e) => {
+                  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    handleGenerateSQL();
+                  }
+                }}
                 placeholder="Describe what data you want to query in plain English...
 
 Examples:
