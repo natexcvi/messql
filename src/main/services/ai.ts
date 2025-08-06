@@ -354,7 +354,7 @@ IMPORTANT: You MUST follow this exact process:
   "explanation": "Brief explanation of what the query does"
 }
 
-IMPORTANT: Your final response MUST be valid JSON in the exact format shown above. Include SQL comments in the query itself to explain complex parts.
+IMPORTANT: Your final response MUST be valid JSON in the exact format shown above. Include SQL comments in the query itself to explain complex parts, but do not put any comments after the last semicolon!
 
 User Request: ${prompt}`,
         temperature: 0.1,
