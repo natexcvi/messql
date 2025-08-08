@@ -4,25 +4,12 @@ import {
   ElectronApplication,
   Page,
 } from "@playwright/test";
-import * as fs from "fs";
-import * as path from "path";
-
-// Determine the correct app binary path based on architecture
-const arch = process.arch === "arm64" ? "arm64" : "x64";
-const APP_BINARY_PATH = `./dist/mac-${arch}/messql.app/Contents/MacOS/messql`;
 
 export const test = base.extend<{
   electronApp: ElectronApplication;
   page: Page;
 }>({
   electronApp: async ({}, use) => {
-    // Check if the app binary exists
-    if (!fs.existsSync(APP_BINARY_PATH)) {
-      throw new Error(
-        `Electron app binary not found at: ${APP_BINARY_PATH}. Please build the application first by running: npm run dist`,
-      );
-    }
-
     // Launch the Electron app
     const electronApp = await electron.launch({
       args: ["dist/main.js"],
