@@ -3,6 +3,7 @@ import { TestDatabase } from "./test-database";
 async function globalSetup() {
   if (process.env.CI === "true") {
     console.log("Skipping test DB setup");
+    return;
   }
   console.log("Running global setup...");
 
