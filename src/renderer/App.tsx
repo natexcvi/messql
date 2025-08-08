@@ -7,6 +7,7 @@ import { AISettingsModal } from "./components/AISettingsModal";
 import { TextToSQLModal } from "./components/TextToSQLModal";
 import { useDatabase } from "./hooks/useDatabase";
 import { useTheme } from "./hooks/useTheme";
+import { v4 as uuidv4 } from "uuid";
 import {
   DatabaseConnection,
   QueryTab,
@@ -67,7 +68,6 @@ export const App: React.FC = () => {
       for (const conn of savedConnections) {
         // Check if connection uses old-style ID format (contains colons)
         if (conn.id.includes(":")) {
-          const { v4: uuidv4 } = require("uuid");
           const newId = uuidv4();
           const oldId = conn.id;
 
