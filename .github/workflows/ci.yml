@@ -63,3 +63,13 @@ jobs:
           TEST_DB_NAME: test_db
           PLAYWRIGHT_BROWSERS_PATH: /usr/local/bin/playwright-browsers
           CI: "true"
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 30
