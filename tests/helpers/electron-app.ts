@@ -11,8 +11,15 @@ export const test = base.extend<{
 }>({
   electronApp: async ({}, use) => {
     // Launch the Electron app
+    const args = ["dist/main.js"];
+    
+    // Disable sandbox in CI environments to avoid permission issues
+    if (process.env.CI) {
+      args.push("--no-sandbox", "--disable-setuid-sandbox");
+    }
+    
     const electronApp = await electron.launch({
-      args: ["dist/main.js"],
+      args,
       timeout: 30000,
     });
 
