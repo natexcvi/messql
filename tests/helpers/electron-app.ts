@@ -15,7 +15,7 @@ export const test = base.extend<{
     
     // Disable sandbox in CI environments to avoid permission issues
     if (process.env.CI) {
-      args.push("--no-sandbox", "--disable-setuid-sandbox");
+      args.push("--no-sandbox", "--disable-setuid-sandbox", "--headless");
     }
     
     const electronApp = await electron.launch({

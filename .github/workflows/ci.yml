@@ -54,7 +54,7 @@ jobs:
         run: npm run build
 
       - name: Run tests
-        run: npm run test
+        run: xvfb-run -a npm run test
         env:
           TEST_DB_HOST: localhost
           TEST_DB_PORT: 5433
