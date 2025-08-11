@@ -56,7 +56,7 @@ jobs:
       - name: Run tests
         run: xvfb-run -a npm run test
         env:
-          TEST_DB_HOST: localhost
+          TEST_DB_HOST: postgres
           TEST_DB_PORT: 5433
           TEST_DB_USER: test_user
           TEST_DB_PASS: test_password
