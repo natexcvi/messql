@@ -23,7 +23,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
         ports:
-          - 5433:5432
+          - 5432:5432
 
     strategy:
       matrix:
@@ -56,13 +56,14 @@ jobs:
       - name: Run tests
         run: xvfb-run -a npm run test
         env:
-          TEST_DB_HOST: postgres
+          TEST_DB_HOST: 127.0.0.1
           TEST_DB_PORT: 5432
           TEST_DB_USER: test_user
           TEST_DB_PASS: test_password
           TEST_DB_NAME: test_db
           PLAYWRIGHT_BROWSERS_PATH: /usr/local/bin/playwright-browsers
           CI: "true"
+          DEBUG: "pw:api"
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
