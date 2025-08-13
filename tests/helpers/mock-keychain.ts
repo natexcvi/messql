@@ -1,15 +1,14 @@
 import { ElectronApplication } from "@playwright/test";
 
 export async function setupKeychainMock(electronApp: ElectronApplication) {
+  const testStorage = new Map<string, string>();
+
   // Mock the keychain IPC handlers
   await electronApp.evaluate(({ ipcMain }) => {
     // Remove existing handlers if any
     ipcMain.removeHandler("keychain:set");
     ipcMain.removeHandler("keychain:get");
     ipcMain.removeHandler("keychain:delete");
-
-    // Create mock storage in the main process
-    const testStorage = new Map<string, string>();
 
     // Register mock handlers
     ipcMain.handle(
