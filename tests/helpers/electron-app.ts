@@ -4,6 +4,7 @@ import {
   ElectronApplication,
   Page,
 } from "@playwright/test";
+import { setupKeychainMock } from "./mock-keychain";
 
 export const test = base.extend<{
   electronApp: ElectronApplication;
@@ -12,16 +13,20 @@ export const test = base.extend<{
   electronApp: async ({}, use) => {
     // Launch the Electron app
     const args = ["dist/main.js"];
-    
+
     // Disable sandbox in CI environments to avoid permission issues
     if (process.env.CI) {
       args.push("--no-sandbox", "--disable-setuid-sandbox", "--headless");
     }
-    
+
     const electronApp = await electron.launch({
       args,
       timeout: 30000,
     });
+
+    if (process.env.CI) {
+      await setupKeychainMock(electronApp);
+    }
 
     await use(electronApp);
     await electronApp.close();
@@ -59,7 +64,9 @@ export const test = base.extend<{
 
     // After test, report any console errors that occurred
     if (consoleErrors.length > 0) {
-      console.error(`\n[Test Summary] ${consoleErrors.length} console error(s) detected during test:`);
+      console.error(
+        `\n[Test Summary] ${consoleErrors.length} console error(s) detected during test:`,
+      );
       consoleErrors.forEach((error, index) => {
         console.error(`  ${index + 1}. ${error}`);
       });
