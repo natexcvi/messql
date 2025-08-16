@@ -132,9 +132,9 @@ test.describe("Connection Management", () => {
     });
 
     test("should connect to database", async ({ page }) => {
-      await mainPage.connectionPage.connectToDatabase(
-        "Management Test Connection",
-      );
+      const connectionName =
+        await testConnection.createTestConnection("sanity");
+      await mainPage.connectionPage.connectToDatabase(connectionName);
 
       await mainPage.pause(2000);
 
