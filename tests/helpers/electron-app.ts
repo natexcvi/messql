@@ -4,7 +4,6 @@ import {
   ElectronApplication,
   Page,
 } from "@playwright/test";
-import { setupKeychainMock } from "./mock-keychain";
 
 export const test = base.extend<{
   electronApp: ElectronApplication;
@@ -23,10 +22,6 @@ export const test = base.extend<{
       args,
       timeout: 30000,
     });
-
-    if (process.env.CI) {
-      await setupKeychainMock(electronApp);
-    }
 
     await use(electronApp);
     await electronApp.close();
